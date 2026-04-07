@@ -1,0 +1,1660 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>법무부 보호관찰위원회 서대문지구 회계관리 통합시스템</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; padding: 20px; background-color: #f4f7f6; }
+        .container { max-width: 1250px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; margin-bottom: 0; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        
+        .section-box { border: 1px solid #dee2e6; padding: 20px; border-radius: 10px; margin-bottom: 25px; background-color: #ffffff; box-sizing: border-box; }
+        .section-title { font-size: 17px; font-weight: bold; color: #0056b3; margin-bottom: 15px; display: block; }
+        
+        .admin-form-box { border: 2px dashed #007bff !important; padding: 20px; border-radius: 10px; margin-bottom: 25px; display: none; flex-direction: column; box-sizing: border-box; }
+        .tab-menu { display: flex; align-items: flex-end; gap: 5px; margin-bottom: -1px; }
+        .tab { padding: 10px 20px; border: 1px solid #dee2e6; border-bottom: none; border-radius: 8px 8px 0 0; cursor: pointer; background: #e9ecef; white-space: nowrap; }
+        .tab.active { background: white; font-weight: bold; border-top: 3px solid #0056b3; height: 42px; display: flex; align-items: center; }
+        
+        .form-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; width: 100%; box-sizing: border-box; }
+        .form-group { display: flex; align-items: center; gap: 8px; }
+        label { font-size: 13px; font-weight: bold; color: #495057; white-space: nowrap; }
+        input, select { padding: 0 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 14px; height: 40px; box-sizing: border-box; }
+        
+        #payMonths { width: 55px !important; min-width: 55px !important; flex: 0 0 55px !important; text-align: center; padding: 0 5px; }
+        #duesPeriodDiv span { white-space: nowrap; }
+
+        .query-period-row { display: flex; align-items: center; gap: 5px; }
+        .pc-nowrap { flex-wrap: nowrap !important; }
+        .action-btn-group { width: auto; }
+        .m-br { display: none; }
+
+        button { height: 40px; padding: 0 18px; border: none; border-radius: 6px; font-size: 14px; font-weight: bold; color: white; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; }
+        .btn-green { background-color: #28a745; }
+        .btn-blue { background-color: #007bff; }
+        .btn-red { background-color: #e03131; }
+        .btn-gray { background-color: #495057; }
+        .btn-purple { background-color: #7048e8; }
+        .btn-orange { background-color: #fd7e14; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: center; }
+        th { background-color: #f8f9fa; }
+        .summary-row { background-color: #fff9db; font-weight: bold; }
+        .expense-row { background-color: #fff5f5; }
+        .income-row { background-color: #f0fff4; }
+        
+        #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 5000; }
+        .login-box { background: white; padding: 30px; border-radius: 15px; text-align: center; width: 380px; box-sizing: border-box; }
+        .recent-box { background-color: #fff9f0; padding: 15px; border-radius: 8px; border: 1px solid #ffe8cc; margin-top: 20px; }
+        
+        .receipt-link { color: #007bff; text-decoration: underline; cursor: pointer; font-size: 12px; margin-right: 5px; }
+        .file-list-container { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px; font-size: 12px; }
+        .file-item { background: #e7f5ff; padding: 4px 10px; border-radius: 4px; display: flex; align-items: center; gap: 8px; border: 1px solid #a5d8ff; }
+        .file-del-btn { color: #e03131; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .file-del-btn:hover { color: #c92a2a; }
+
+        .multi-popup { position: fixed; width: 350px; min-width: 200px; min-height: 200px; background: white; z-index: 3000; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); flex-direction: column; overflow: hidden; display: flex; touch-action: none; }
+        .resizer { position: absolute; z-index: 10; }
+        .resizer-t { top: 0; left: 0; width: 100%; height: 8px; cursor: n-resize; }
+        .resizer-b { bottom: 0; left: 0; width: 100%; height: 8px; cursor: s-resize; }
+        .resizer-l { top: 0; left: 0; width: 8px; height: 100%; cursor: w-resize; }
+        .resizer-r { top: 0; right: 0; width: 8px; height: 100%; cursor: e-resize; }
+        .resizer-tl { top: 0; left: 0; width: 12px; height: 12px; cursor: nw-resize; z-index: 11; }
+        .resizer-tr { top: 0; right: 0; width: 12px; height: 12px; cursor: ne-resize; z-index: 11; }
+        .resizer-bl { bottom: 0; left: 0; width: 12px; height: 12px; cursor: sw-resize; z-index: 11; }
+        .resizer-br { bottom: 0; right: 0; width: 12px; height: 12px; cursor: se-resize; z-index: 11; }
+        
+        .popup-header { background: #f1f3f5; padding: 8px 12px; cursor: move; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #dee2e6; user-select: none; flex-shrink: 0; }
+        .popup-body { width: 100%; flex-grow: 1; overflow: auto; background: #f8f9fa; display: flex; justify-content: center; align-items: center; padding: 5px; box-sizing: border-box; }
+        .popup-body img { max-width: 100%; max-height: 100%; width: auto; height: auto; display: block; object-fit: contain; pointer-events: none; }
+        .close-popup { cursor: pointer; font-weight: bold; color: #868e96; font-size: 18px; }
+
+        .dynamic-title { display: none; text-align: center; font-size: 20px; margin-bottom: 15px; font-weight: bold; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .info-notice { margin-top: 15px; padding: 15px; background-color: #e7f5ff; border-left: 5px solid #007bff; font-size: 13px; color: #333; line-height: 1.6; text-align: left; border-radius: 0 8px 8px 0; }
+        .unpaid-info { margin-top: 10px; font-weight: bold; padding-top: 10px; border-top: 1px dashed #abd5ff; }
+
+        @media print {
+            @page { size: A4 portrait; margin: 10mm; }
+            body * { visibility: hidden; }
+            #printArea, #printArea *, .print-target, .print-target * { visibility: visible; }
+            .print-target { position: absolute; left: 0; top: 0; width: 100% !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; }
+            .dynamic-title { display: block !important; }
+            table { width: 100% !important; table-layout: fixed; word-break: break-all; }
+            th, td { padding: 8px 4px !important; font-size: 11px !important; }
+            .no-print { display: none !important; }
+            .info-notice { display: block !important; border: 1px solid #ddd; }
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .container { padding: 15px; }
+            .container > div:first-child { flex-direction: column; gap: 15px; align-items: stretch !important; }
+            .container > div:first-child > div:first-child { display: none; }
+            
+            h2 { display: block !important; text-align: center !important; font-size: 16px !important; line-height: 1.4 !important; white-space: normal !important; word-break: keep-all !important; margin-bottom: 0 !important; }
+            .m-br { display: block !important; margin-bottom: 4px; }
+            
+            .container > div:first-child > div:nth-child(3) { width: 100%; display: flex; justify-content: space-between; margin-bottom: 10px; }
+            .container > div:first-child > div:nth-child(3) button { flex: 1; }
+            
+            .tab-menu { flex-wrap: wrap; gap: 2px; }
+            .tab { flex: 1 1 48%; text-align: center; justify-content: center; padding: 8px 5px; font-size: 12px; margin-bottom: 2px; }
+            .tab.active { height: auto; padding: 10px 5px; }
+            
+            .form-row { flex-direction: column; align-items: stretch !important; gap: 10px; }
+            .form-group { width: 100%; flex-direction: column; align-items: flex-start; gap: 5px; }
+            .form-group > label { margin-bottom: 0; font-size: 12px; }
+            
+            .form-group > input, .form-group > select { 
+                width: 100% !important; 
+                min-width: 100% !important; 
+                max-width: 100% !important; 
+                height: 45px !important; 
+                box-sizing: border-box !important; 
+                margin: 0 !important; 
+            }
+            
+            #customCategoryDiv, #duesPeriodDiv, #memberFilterDiv { width: 100%; margin-left: 0 !important; padding-left: 0 !important; border-left: none !important; }
+            #customCategoryDiv > input { width: 100% !important; height: 45px; }
+            
+            .query-period-row {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .query-period-row > input[type="month"] { width: 45% !important; flex: 1 1 auto !important; height: 45px !important; min-width: 0 !important; box-sizing: border-box !important; padding: 0 4px !important; margin: 0 !important; }
+            .query-period-row > span { width: 10% !important; text-align: center !important; flex: none !important; white-space: nowrap !important; margin: 0 !important; padding: 0 !important; font-size: 13px !important; }
+
+            .admin-only[style*="margin-left: auto"] { width: 100%; justify-content: space-between; margin-top: 10px; margin-left: 0 !important; padding-bottom: 10px; display: flex; }
+            .admin-only[style*="margin-left: auto"] button { flex: 1; }
+
+            .no-print { display: flex !important; flex-direction: column !important; width: 100% !important; box-sizing: border-box !important; gap: 10px !important; }
+            .no-print .form-group, .no-print .query-period-row, #searchControlRow, #searchMemberDiv { width: 100% !important; margin: 0 !important; align-items: stretch !important; box-sizing: border-box !important; }
+            .no-print input, .no-print select, .no-print button.btn-gray { width: 100% !important; max-width: 100% !important; height: 45px !important; box-sizing: border-box !important; margin: 0 !important; }
+            
+            .no-print div[style*="margin-left"] { margin-left: 0 !important; width: 100% !important; justify-content: space-between !important; flex-wrap: nowrap !important; display: flex !important; gap: 5px !important; }
+            .no-print div[style*="margin-left"] button { flex: 1 1 0px !important; min-width: 0 !important; padding: 0 !important; font-size: 11px !important; margin-bottom: 5px !important; height: 32px !important; }
+            
+            #carryOverDisplay { margin-left: 0 !important; text-align: left; width: 100%; margin-top: 10px; }
+
+            .recent-box, .section-box { padding: 10px; }
+            .recent-box, #tab-search { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            table { white-space: nowrap; min-width: 600px; }
+            th, td { padding: 8px 6px; font-size: 12px; }
+
+            .login-box { width: 90%; padding: 20px; }
+            .login-box button { width: 100%; height: 45px; }
+            .multi-popup { width: 90% !important; left: 5% !important; min-width: auto; }
+            .action-btn-group { width: 100%; }
+
+            .form-group, .form-row { box-sizing: border-box !important; max-width: 100% !important; }
+            
+            input[type="date"], input[type="month"] { 
+                width: 100% !important; 
+                min-width: 100% !important; 
+                max-width: 100% !important; 
+                box-sizing: border-box !important; 
+                -webkit-appearance: none !important; 
+                appearance: none !important; 
+            }
+            
+            #duesPeriodDiv { flex-wrap: wrap !important; gap: 5px !important; justify-content: flex-start !important; }
+            #duesPeriodDiv > input[type="month"] { flex: 1 1 40% !important; width: auto !important; min-width: 0 !important; }
+            #duesPeriodDiv > span:first-of-type { flex: 0 0 auto !important; width: auto !important; }
+            #payMonths { flex: 0 0 60px !important; width: 60px !important; margin-top: 5px !important; }
+            #duesPeriodDiv > span:last-child { flex: 0 0 auto !important; width: auto !important; margin-top: 5px !important; white-space: nowrap !important; }
+
+            #tab-account .recent-box > div:last-child { flex-direction: column !important; }
+            #tab-account .recent-box > div:last-child button { width: 100% !important; margin: 0 !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="loginOverlay">
+    <div class="login-box" id="loginBoxMain">
+        <h3>📊 시스템 접속</h3>
+        <div id="authArea" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+            <input type="tel" id="loginPhone" placeholder="휴대폰 번호 (-없이 입력)" maxlength="11" style="width:100%;">
+            <input type="password" id="loginPw" placeholder="비밀번호 4자리 (최초 접속은 빈칸)" maxlength="4" style="width:100%;">
+            
+            <button onclick="handleLogin()" id="loginBtn" class="btn-blue" style="margin-top:5px;">일반회원 로그인</button>
+            <button onclick="handleFirstLogin()" class="btn-green">최초 로그인 접속하기</button>
+            
+            <div style="margin-top:10px; padding-top:10px; border-top:1px dashed #ddd;">
+                <button onclick="showAdminLogin()" class="btn-gray" style="font-size:11px; height:30px; width:100%;">관리자 전용 로그인</button>
+            </div>
+        </div>
+        <div id="findPwArea" style="margin-top:15px; font-size:12px;">
+            <span style="color:#007bff; cursor:pointer; text-decoration:underline;" onclick="startFindPw()">비밀번호를 잊으셨나요?</span>
+        </div>
+    </div>
+</div>
+
+<div id="setupOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:6000; justify-content:center; align-items:center;">
+    <div class="login-box" style="width:400px;">
+        <h3 id="setupTitle">🌱 최초 접속 정보 설정</h3>
+        <p style="font-size:12px; color:#666; margin-bottom:15px;">안전한 조회를 위해 본인만의 비밀번호를 설정해주세요.</p>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            <div class="form-group"><label>비밀번호 (4자리)</label><input type="password" id="setupPw" maxlength="4" style="width:100%;"></div>
+            <div class="form-group"><label>보안 질문 선택</label>
+                <select id="setupQ" style="width:100%;">
+                    <option value="졸업한 초등학교의 이름은?">졸업한 초등학교의 이름은?</option>
+                    <option value="가장 기억에 남는 보물 1호는?">가장 기억에 남는 보물 1호는?</option>
+                    <option value="처음으로 가본 해외 여행지는?">처음으로 가본 해외 여행지는?</option>
+                    <option value="어머니의 성함은?">어머니의 성함은?</option>
+                    <option value="가장 좋아하는 운동 선수는?">가장 좋아하는 운동 선수는?</option>
+                </select>
+            </div>
+            <div class="form-group"><label>질문 정답</label><input type="text" id="setupA" placeholder="정답 입력" style="width:100%;"></div>
+            <button onclick="saveSetup()" class="btn-green" style="margin-top:10px;">설정 완료 및 접속</button>
+            <button onclick="document.getElementById('setupOverlay').style.display='none'" class="btn-gray">취소</button>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
+        <div style="width: 100px;"></div>
+        <div style="flex: 1; text-align: center;">
+            <h2 style="border-bottom: none;">
+                📊 법무부 보호관찰위원회<br class="m-br"> 서대문지구 회계관리 통합시스템
+            </h2>
+        </div>
+        <div style="display:flex; gap:5px; align-items: center;">
+            <button onclick="openMyInfo()" class="btn-gray" style="height: 30px; font-size: 11px;">⚙️ 내정보</button>
+            <button onclick="logout()" class="btn-gray" style="height: 30px; font-size: 11px;">로그아웃</button>
+        </div>
+    </div>
+    <div id="realtimeMemberCount" style="color: #e03131; font-size: 12px; text-align: right; font-weight: bold; margin-bottom: 10px;">현재 실시간 회원수 : -명</div>
+    <div style="border-bottom: 2px solid #333; margin-bottom: 25px;"></div>
+
+    <div class="tab-menu">
+        <div id="tabInputBtn" class="tab" onclick="switchTab('input')">수입 현황 및 등록</div>
+        <div id="tabExpenseBtn" class="tab" onclick="switchTab('expense')">지출 현황 및 등록</div>
+        <div id="tabCombinedBtn" class="tab" onclick="switchTab('combined')">수입 및 지출 현황</div>
+        <div id="tabSearchBtn" class="tab" onclick="switchTab('search')">납부 상세조회</div>
+        <div id="tabMemberBtn" class="tab admin-only" onclick="switchTab('member')" style="display:none;">회원 관리</div>
+        <div id="tabAccountBtn" class="tab" onclick="switchTab('account')">회비납부 계좌번호</div>
+        
+        <div class="admin-only" style="margin-left: auto; display:none; gap: 5px; padding-bottom: 5px;">
+            <button onclick="exportData()" style="background-color: #6741d8; height: 32px; font-size: 12px;">💻 백업</button>
+            <button onclick="document.getElementById('importFile').click()" style="background-color: #fd7e14; height: 32px; font-size: 12px;">📂 복구</button>
+            <input type="file" id="importFile" style="display:none" onchange="importData(this)">
+        </div>
+    </div>
+
+    <div id="tab-input" class="section-box" style="border-radius: 0 8px 8px 8px;">
+        <div id="inputFormBox" class="admin-form-box admin-only">
+            <span class="section-title" id="formTitle">💰 새 입금 내역 등록</span>
+            <div class="form-row pc-nowrap">
+                <div class="form-group"><label>납부일자</label><input type="date" id="payDate" onchange="syncMonthsWithPayDate(this.value)"></div>
+                <div class="form-group"><label>성명</label><select id="memberName" onchange="onChangeMemberOrCat()"></select></div>
+                <div class="form-group"><label>항목</label>
+                    <select id="payCategory" onchange="toggleForm(); onChangeMemberOrCat();">
+                        <option value="월회비">월회비</option><option value="찬조금">찬조금</option><option value="입회비">입회비</option><option value="예금이자">예금이자</option><option value="체크카드 캐쉬백">체크카드 캐쉬백</option><option value="기타">기타</option>
+                    </select>
+                </div>
+                <div id="customCategoryDiv" style="display:none;"><input type="text" id="customCategory" placeholder="사유"></div>
+                <div id="duesPeriodDiv" class="query-period-row">
+                    <input type="month" id="startMonth" onchange="validateStartMonth(); calcMonths(); autoCalcAmount();"> <span>~</span> <input type="month" id="endMonth" onchange="calcMonths(); autoCalcAmount();">
+                    <input type="text" id="payMonths" readonly> <span>개월</span>
+                </div>
+                <div class="form-group"><label>금액</label><input type="number" id="payAmount" style="width: 110px;"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>방법</label><select id="payMethod"><option value="계좌이체">계좌이체</option><option value="현금">현금</option><option value="기타">기타</option></select></div>
+                <div class="form-group"><label>장부기입월</label><input type="month" id="reportMonth"></div>
+                <div class="form-group" style="flex:1;"><label>비고</label><input type="text" id="payNote" placeholder="참고사항 입력"></div>
+                <div class="action-btn-group" style="display: flex; gap: 5px;">
+                    <button onclick="saveRecord()" class="btn-green">기입</button>
+                    <button id="cancelBtn" onclick="resetForm()" class="btn-gray" style="display:none;">취소</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="recent-box print-target" id="inputPrintArea">
+            <div id="inputPrintTitle" class="dynamic-title"></div>
+            <div class="form-row no-print">
+                <div class="query-period-row">
+                    <label>🔍 조회기간:</label> 
+                    <input type="month" id="viewTargetMonthStart"> <span>~</span> <input type="month" id="viewTargetMonthEnd">
+                </div>
+                <div id="memberFilterDiv" style="display:none; align-items: center; gap: 10px; margin-left: 10px; border-left: 2px solid #ddd; padding-left: 15px;">
+                    <label>👤 이름:</label> <span id="myDisplayName" style="font-weight:bold; color:#0056b3;">-</span>
+                    <select id="myIdentitySelect" style="display:none;"></select>
+                </div>
+                <button onclick="renderRecentTable()" class="btn-gray">조회</button>
+                <div style="margin-left: auto; display: flex; gap: 5px;">
+                    <button onclick="exportToImage('inputPrintArea', 'input')" class="btn-purple" style="height:32px; font-size:12px;">🖼️ 이미지</button>
+                    <button onclick="exportToPDF('inputPrintArea', 'input')" class="btn-red" style="height:32px; font-size:12px;">📕 PDF</button>
+                    <button onclick="exportToExcel('recentTable', '수입내역')" class="btn-green" style="height:32px; font-size:12px;">📗 Excel</button>
+                </div>
+            </div>
+            <table id="recentTable">
+                <thead><tr><th>구분</th><th>성명</th><th>납부일자</th><th>내역</th><th>개월</th><th>방법</th><th>금액</th><th>비고</th><th class="admin-only no-print" style="display:none;">관리</th></tr></thead>
+                <tbody id="recentBody"></tbody>
+                <tfoot id="recentFoot"></tfoot>
+            </table>
+        </div>
+    </div>
+    
+    <div id="tab-expense" class="section-box" style="display: none; border-radius: 0 8px 8px 8px;">
+        <div id="expenseFormBox" class="admin-form-box admin-only">
+            <span class="section-title" id="expenseFormTitle">💸 새 지출 내역 등록</span>
+            <div class="form-row">
+                <div class="form-group"><label>지출일자</label><input type="date" id="exDate" onchange="syncExMonth(this.value)"></div>
+                <div class="form-group"><label>항목</label>
+                    <select id="exCategory">
+                        <option value="꽃다발">꽃다발</option><option value="주차비">주차비</option><option value="지원금">지원금</option><option value="격려금">격려금</option><option value="식사비">식사비</option><option value="경조사비">경조사비</option><option value="경조사화환">경조사화환</option><option value="행사비">행사비</option><option value="기념품">기념품</option><option value="연합회비">연합회비</option><option value="기타">기타</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>금액</label><input type="number" id="exAmount"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>결제방법</label>
+                    <select id="exMethod"><option value="체크카드">체크카드</option><option value="계좌이체">계좌이체</option><option value="현금">현금</option><option value="기타">기타</option></select>
+                </div>
+                <div class="form-group"><label>장부기입월</label><input type="month" id="exReportMonth"></div>
+                <div class="form-group"><label>영수증(최대10개)</label><input type="file" id="exReceipt" style="font-size:12px;" accept="image/*" multiple onchange="handleFileSelect(this)"></div>
+                <div class="form-group" style="flex:1;"><label>상세내역</label><input type="text" id="exNote" placeholder="상세 사유 입력"></div>
+                <div class="action-btn-group" style="display: flex; gap: 5px;">
+                    <button onclick="saveExpense()" class="btn-red">지출기입</button>
+                    <button id="exCancelBtn" onclick="resetExForm()" class="btn-gray" style="display:none;">취소</button>
+                </div>
+            </div>
+            <div id="selectedFiles" class="file-list-container"></div>
+        </div>
+        <div class="recent-box print-target" id="expensePrintArea" style="background-color: #fff5f5; border-color: #ffc9c9;">
+            <div id="expensePrintTitle" class="dynamic-title"></div>
+            <div class="form-row no-print">
+                <div class="query-period-row">
+                    <label>🔍 조회기간:</label> 
+                    <input type="month" id="viewExMonthStart"> <span>~</span> <input type="month" id="viewExMonthEnd">
+                </div>
+                <button onclick="renderExpenseTable()" class="btn-gray">조회</button>
+                <div style="margin-left: auto; display: flex; gap: 5px;">
+                    <button onclick="exportToImage('expensePrintArea', 'expense')" class="btn-purple" style="height:32px; font-size:12px;">🖼️ 이미지</button>
+                    <button onclick="exportToPDF('expensePrintArea', 'expense')" class="btn-red" style="height:32px; font-size:12px;">📕 PDF</button>
+                    <button onclick="exportToExcel('expenseTable', '지출내역')" class="btn-green" style="height:32px; font-size:12px;">📗 Excel</button>
+                </div>
+                <div id="carryOverDisplay" style="margin-left:10px; font-weight:bold; color:#d63384; align-self:center;"></div>
+            </div>
+            <table id="expenseTable">
+                <thead><tr><th>지출일자</th><th>항목</th><th>금액</th><th>방법</th><th>상세내역</th><th>증빙</th><th class="admin-only no-print" style="display:none;">관리</th></tr></thead>
+                <tbody id="expenseBody"></tbody>
+                <tfoot id="expenseFoot"></tfoot>
+            </table>
+        </div>
+    </div>
+
+    <div id="tab-combined" class="section-box" style="display: none; border-radius: 0 8px 8px 8px;">
+        <span class="section-title">📊 수입 및 지출 종합현황</span>
+        <div class="recent-box print-target" id="combinedPrintArea" style="background-color: #f8f9fa; border-color: #dee2e6;">
+            <div id="combinedPrintTitle" class="dynamic-title"></div>
+            <div class="form-row no-print">
+                <div class="query-period-row">
+                    <label>🔍 조회기간:</label> 
+                    <input type="month" id="viewCombinedMonthStart"> <span>~</span> <input type="month" id="viewCombinedMonthEnd">
+                </div>
+                <button onclick="renderCombinedTable()" class="btn-gray">조회</button>
+                <div style="margin-left: auto; display: flex; gap: 5px;">
+                    <button onclick="exportToImage('combinedPrintArea', 'combined')" class="btn-purple" style="height:32px; font-size:12px;">🖼️ 이미지</button>
+                    <button onclick="exportToPDF('combinedPrintArea', 'combined')" class="btn-red" style="height:32px; font-size:12px;">📕 PDF</button>
+                    <button onclick="exportToExcel('combinedTable', '종합현황')" class="btn-green" style="height:32px; font-size:12px;">📗 Excel</button>
+                </div>
+            </div>
+            <table id="combinedTable">
+                <thead><tr><th>날짜</th><th>구분</th><th>성명/항목</th><th>상세내역</th><th>수입</th><th>지출</th><th>잔액</th></tr></thead>
+                <tbody id="combinedBody"></tbody>
+                <tfoot id="combinedFoot"></tfoot>
+            </table>
+        </div>
+        <div class="recent-box print-target admin-only" id="statsPrintArea" style="margin-top: 30px; background-color: #f8f9fd; border-color: #adb5bd; display:none;">
+            <div class="no-print">
+                <span class="section-title" style="color: #343a40;">📅 기간별 월간 요약 현황</span>
+                <div class="form-row" style="margin-bottom: 15px;">
+                    <div class="query-period-row">
+                        <label>조회 기간:</label>
+                        <input type="month" id="statsStartMonth"> <span>~</span> <input type="month" id="statsEndMonth">
+                    </div>
+                    <button onclick="calculateRangeStats()" class="btn-blue">데이터 조회</button>
+                </div>
+            </div>
+            <div id="printArea" style="background: white; padding: 20px; border-radius: 8px;">
+                <table id="monthlyStatsTable" style="background: white; width: 100%;">
+                    <thead><tr style="background:#e9ecef;"><th>장부기입월</th><th>월간 수입 합계</th><th>월간 지출 합계</th><th>월말 최종 잔액</th></tr></thead>
+                    <tbody id="monthlyStatsBody"></tbody>
+                    <tfoot id="monthlyStatsFoot"></tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-search" class="section-box print-target" style="display: none;">
+        <div id="searchPrintTitle" class="dynamic-title">납부 상세 조회 결과</div>
+        <span class="section-title" id="searchMainTitle">🔍 상세 데이터 검색</span>
+        
+        <div class="form-row no-print" style="justify-content: space-between;">
+            <div id="searchControlRow" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <select id="searchType" onchange="toggleSearchType()">
+                    <option value="report">기간 전체조회</option>
+                    <option value="member">특정회원조회</option>
+                    <option value="unpaid">미납자 명단</option>
+                </select>
+                <div id="searchMemberDiv" style="display: none;"><select id="searchMemberName"></select></div>
+                <div class="query-period-row"><input type="month" id="searchStart"> <span>~</span> <input type="month" id="searchEnd"></div>
+                <button onclick="searchData()" class="btn-gray">검색</button>
+            </div>
+            
+            <div style="margin-left: auto; display: flex; gap: 5px;">
+                <button onclick="exportToImage('tab-search', 'search')" class="btn-purple" style="height:32px; font-size:12px;">🖼️ 이미지</button>
+                <button onclick="exportToPDF('tab-search', 'search')" class="btn-red" style="height:32px; font-size:12px;">📕 PDF</button>
+                <button onclick="exportToExcel('resultTable', '조회결과')" class="btn-green" style="height:32px; font-size:12px;">📗 Excel</button>
+            </div>
+        </div>
+        
+        <table id="resultTable" style="margin-top:15px;">
+            <thead id="tableHeader"></thead>
+            <tbody id="tableBody"></tbody>
+            <tfoot id="tableFoot"></tfoot>
+        </table>
+        <div id="searchNotice" class="info-notice" style="display:none;"></div>
+    </div>
+
+    <div id="tab-member" class="section-box admin-only" style="display: none; border-radius: 0 8px 8px 8px;">
+        <div class="admin-form-box" style="display: flex;">
+            <span class="section-title" id="memberFormTitle">👤 신규 회원 등록</span>
+            <div class="form-row">
+                <div class="form-group"><label>성명</label><input type="text" id="newMemName" placeholder="예: 홍길동"></div>
+                <div class="form-group"><label>연락처</label><input type="text" id="newMemTel" placeholder="- 없이 숫자만" maxlength="11"></div>
+                <div class="form-group"><label>월회비</label><input type="number" id="newMemDues" value="30000"></div>
+                <div class="form-group"><label>위촉월</label><input type="month" id="newMemJoinDate"></div>
+                <div class="form-group"><label>해촉월</label><input type="month" id="newMemLeaveDate"></div>
+                <div class="action-btn-group" style="display: flex; gap: 5px; margin-left: auto;">
+                    <button onclick="saveMember()" class="btn-green">등록</button>
+                    <button id="memCancelBtn" onclick="resetMemberForm()" class="btn-gray" style="display:none;">취소</button>
+                </div>
+            </div>
+        </div>
+        <div class="recent-box print-target" id="memberPrintArea">
+            <div class="form-row no-print">
+                <span style="font-weight:bold; font-size:15px;">📋 전체 회원 관리 목록</span>
+                <button onclick="renderMemberTable()" class="btn-gray" style="margin-left: 10px;">조회</button>
+                <div style="margin-left: auto; display: flex; gap: 5px;">
+                    <button onclick="exportToExcel('memberTable', '회원명부')" class="btn-green" style="height:32px; font-size:12px;">📗 Excel</button>
+                </div>
+            </div>
+            <table id="memberTable">
+                <thead><tr><th>연번</th><th>성명</th><th>연락처</th><th>월회비 설정</th><th>위촉월</th><th>해촉월</th><th class="no-print">관리</th></tr></thead>
+                <tbody id="memberBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tab-account" class="section-box print-target" style="display: none; border-radius: 0 8px 8px 8px;">
+        <span class="section-title">💳 회비납부 계좌번호</span>
+        <div class="recent-box" style="text-align: center; padding: 50px 20px;">
+            <div id="accountInfoDisplay" style="font-size: 18px; line-height: 1.6; font-weight: bold; margin-bottom: 25px; color: #0056b3; letter-spacing: 0.5px;">
+                MG 새마을금고<br>9003-2323-6645-9<br>예금주 김영훈
+            </div>
+            <div style="display: flex; justify-content: center; gap: 10px;">
+                <button onclick="copyAccount()" class="btn-blue" style="font-size: 15px; padding: 0 25px; height: 45px;">📋 클립 복사하기</button>
+                <button onclick="editAccount()" class="btn-gray admin-only" style="display:none; font-size: 15px; height: 45px;">수정 (관리자용)</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyCBTs3qyppsIryvGTGMpgqpzVq6YHI2vq0",
+        authDomain: "janbu-d002f.firebaseapp.com",
+        databaseURL: "https://janbu-d002f-default-rtdb.firebaseio.com",
+        projectId: "janbu-d002f",
+        storageBucket: "janbu-d002f.firebasestorage.app",
+        messagingSenderId: "1054656446111",
+        appId: "1:1054656446111:web:ccaa55cd77c3d0860bacaa"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const INITIAL_MEMBERS = [
+        {name:"강용", tel:"01082284227", dues:30000}, {name:"강철구", tel:"01020375154", dues:30000}, {name:"고영옥", tel:"01063470022", dues:30000},
+        {name:"김민석", tel:"01039538333", dues:30000}, {name:"김봉록", tel:"01033131994", dues:30000}, {name:"김선웅", tel:"01068001901", dues:30000},
+        {name:"김선자", tel:"01096721144", dues:30000}, {name:"김승환", tel:"01037590182", dues:30000}, {name:"김연배", tel:"01056577678", dues:30000},
+        {name:"김영훈", tel:"01052883377", dues:30000}, {name:"김재성", tel:"01028523111", dues:30000}, {name:"김태곤", tel:"01036908083", dues:30000},
+        {name:"김현정", tel:"0109080678", dues:30000}, {name:"김현찬", tel:"01037662147", dues:30000}, {name:"김홍상", tel:"01088204801", dues:30000},
+        {name:"류천희", tel:"01090127002", dues:30000}, {name:"류승민", tel:"01049526365", dues:30000}, {name:"민덕식", tel:"01054952373", dues:30000},
+        {name:"박병수", tel:"01037948608", dues:30000}, {name:"박성구", tel:"01054110886", dues:30000}, {name:"박성훈", tel:"01028063503", dues:30000},
+        {name:"박세진", tel:"01063083407", dues:30000}, {name:"서연채", tel:"01022662025", dues:30000}, {name:"송재민", tel:"01047242859", dues:30000},
+        {name:"신덕철", tel:"01033682979", dues:30000}, {name:"안철홍", tel:"01072205804", dues:30000}, {name:"엄진완", tel:"01087113449", dues:30000},
+        {name:"양준희", tel:"01012341234", dues:30000}, {name:"오환인", tel:"01052643396", dues:30000}, {name:"왕문홍", tel:"01052272024", dues:30000},
+        {name:"이만화", tel:"01037224672", dues:30000}, {name:"이인숙", tel:"01062705073", dues:30000}, {name:"이재중", tel:"01090493615", dues:30000},
+        {name:"이종미", tel:"01053809566", dues:30000}, {name:"임원현", tel:"01072128337", dues:30000}, {name:"장명성", tel:"01038406349", dues:30000},
+        {name:"정관혁", tel:"01034405564", dues:30000}, {name:"정태순", tel:"01034660799", dues:30000}, {name:"진수경", tel:"01053363416", dues:30000},
+        {name:"최성안", tel:"01091357426", dues:30000}, {name:"홍정희", tel:"01094886252", dues:30000}
+    ];
+
+    let config = { pw: "1234", recoveryQ: "나의 보물 1호는?", recoveryA: "가족", bankAccount: "MG 새마을금고\n9003-2323-6645-9\n예금주 김영훈" };
+    let membersList = [];
+    let records = [];
+    let expenseRecords = [];
+    
+    let isAdmin = localStorage.getItem('isAdminPermanent') === 'true';
+    let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    let currentReceipts = [];
+    let editIndex = -1, exEditIndex = -1, memberEditIndex = -1;
+
+    const NON_MEMBER_ITEMS = ["골프회", "기타", "연합회", "예금이자", "체크카드 캐쉬백"];
+    const INITIAL_CARRY_OVER = 14038937;
+    const PAID_IN_FULL_MEMBERS = ["강용", "강철구", "고영옥", "김봉록", "김선웅", "김선자", "김영훈", "김현정", "박성구", "박성훈", "서연채", "송재민", "신덕철", "안철홍", "엄진완", "오환인", "왕문홍", "이인숙", "임원현", "정관혁", "정태순", "류승민"];
+    const FEE_EXEMPTION_MEMBERS = ["김재성", "류천희"];
+    const MANUAL_OVERRIDES = { "강철구": { lastPayDate: "2024-03-27", lastPayTargetMonth: "2025-12" }, "김봉록": { lastPayDate: "2024-08-09", lastPayTargetMonth: "2024-12" }, "김연배": { lastPayDate: "2024-09-03", lastPayTargetMonth: "2023-12" }, "박세진": { lastPayDate: "2022-11-02", lastPayTargetMonth: "2022-12" } };
+
+    // 자동 이미지 압축 함수 (용량 과다로 인한 DB 저장 오류 방지)
+    function resizeImage(base64Str, maxWidth, maxHeight, callback) {
+        let img = new Image();
+        img.onload = function() {
+            let canvas = document.createElement('canvas');
+            let width = img.width, height = img.height;
+            if (width > height) {
+                if (width > maxWidth) { height = Math.round(height * maxWidth / width); width = maxWidth; }
+            } else {
+                if (height > maxHeight) { width = Math.round(width * maxHeight / height); height = maxHeight; }
+            }
+            canvas.width = width; canvas.height = height;
+            let ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            callback(canvas.toDataURL('image/jpeg', 0.6)); // JPEG 60% 품질로 대폭 압축
+        };
+        img.src = base64Str;
+    }
+
+    function exportData() {
+        const dataObj = { config, members: membersList, records, expenses: expenseRecords };
+        const dataStr = JSON.stringify(dataObj);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        
+        const dlAnchorElem = document.createElement('a');
+        dlAnchorElem.setAttribute("href", url);
+        dlAnchorElem.setAttribute("download", "jangbu_backup.json");
+        document.body.appendChild(dlAnchorElem);
+        dlAnchorElem.click();
+        document.body.removeChild(dlAnchorElem);
+        URL.revokeObjectURL(url);
+    }
+
+    function importData(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                if(data.members || data.records) {
+                    if(data.config) config = data.config;
+                    if(data.members) membersList = data.members;
+                    if(data.records) records = data.records;
+                    if(data.expenses) expenseRecords = data.expenses;
+                    await saveToFirebase();
+                    alert("데이터 복구가 완료되었습니다.");
+                    location.reload();
+                } else {
+                    alert("올바른 백업 파일이 아닙니다.");
+                }
+            } catch(err) { 
+                alert("파일 읽기 오류가 발생했습니다."); 
+            } finally {
+                input.value = ""; 
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function saveToFirebase() {
+        return db.ref('jangbu').set({ config, members: membersList, records, expenses: expenseRecords });
+    }
+
+    function handleLogin() {
+        const tel = document.getElementById('loginPhone').value.trim();
+        const pwInput = document.getElementById('loginPw').value.trim();
+        const member = membersList.find(m => m.tel === tel);
+        if(!member) { alert("등록된 회원 정보가 없습니다."); return; }
+        if(!member.pw) { alert("비밀번호가 아직 설정되지 않았습니다.\n아래의 [최초 로그인 접속하기] 버튼을 이용해주세요."); return; }
+        if(!pwInput) { alert("비밀번호 4자리를 입력해주세요."); return; }
+        if(pwInput === member.pw) { loginAsMember(member, false); } else { alert("비밀번호가 일치하지 않습니다."); }
+    }
+
+    function handleFirstLogin() {
+        const tel = document.getElementById('loginPhone').value.trim();
+        const member = membersList.find(m => m.tel === tel);
+        if(!member) { alert("등록된 회원 정보가 없습니다."); return; }
+        if(member.pw) { alert("이미 비밀번호가 설정되어 있습니다.\n비밀번호를 입력하고 [일반회원 로그인] 버튼을 눌러주세요."); return; }
+        sessionStorage.setItem('pendingUser', JSON.stringify(member));
+        document.getElementById('setupOverlay').style.display = 'flex';
+    }
+
+    async function saveSetup() {
+        const pw = document.getElementById('setupPw').value;
+        const q = document.getElementById('setupQ').value;
+        const a = document.getElementById('setupA').value;
+        const member = JSON.parse(sessionStorage.getItem('pendingUser'));
+        if(pw.length < 4 || !a) { alert("비밀번호 4자리와 보안 질문 정답을 모두 입력해주세요."); return; }
+        const idx = membersList.findIndex(m => m.tel === member.tel);
+        membersList[idx].pw = pw;
+        membersList[idx].recoveryQ = q;
+        membersList[idx].recoveryA = a;
+        try {
+            await saveToFirebase(); 
+            document.getElementById('setupOverlay').style.display = 'none';
+            loginAsMember(membersList[idx], true);
+        } catch (error) { alert("서버 저장 중 오류가 발생했습니다. 다시 시도해주세요."); }
+    }
+
+    function loginAsMember(member, isFirstTime) {
+        localStorage.setItem('currentUser', JSON.stringify(member));
+        localStorage.setItem('isGuestPermanent', 'true');
+        if(isFirstTime) { alert(`${member.name}님, 비밀번호 설정이 완료되었습니다. 환영합니다!`); } 
+        else { alert(`${member.name}님 환영합니다.`); }
+        location.reload();
+    }
+
+    async function showAdminLogin() {
+        const pw = prompt("관리자 비밀번호를 입력하세요.");
+        if(pw !== null) {
+            try {
+                const snap = await db.ref('jangbu/config/pw').once('value');
+                const serverPw = snap.val() || config.pw;
+                if(String(pw).trim() === String(serverPw).trim()) {
+                    localStorage.setItem('isAdminPermanent', 'true');
+                    location.reload();
+                } else { alert("비밀번호가 틀립니다."); }
+            } catch(e) {
+                if(String(pw).trim() === String(config.pw).trim()) {
+                    localStorage.setItem('isAdminPermanent', 'true');
+                    location.reload();
+                } else { alert("비밀번호가 틀립니다."); }
+            }
+        }
+    }
+
+    async function startFindPw() {
+        const tel = document.getElementById('loginPhone').value.trim();
+        const member = membersList.find(m => m.tel === tel);
+        if(!member || !member.recoveryQ) { alert("정보가 없거나 아직 보안 질문이 설정되지 않았습니다."); return; }
+        const ans = prompt(`질문: ${member.recoveryQ}`);
+        if(ans === member.recoveryA) {
+            const newPw = prompt("인증 성공! 새 비밀번호 4자리를 설정하세요.");
+            if(newPw && newPw.length === 4) {
+                member.pw = newPw;
+                await saveToFirebase();
+                alert("비밀번호가 변경되었습니다. 다시 로그인하세요.");
+                location.reload();
+            } else { alert("비밀번호는 4자리로 입력해야 합니다."); }
+        } else { alert("보안 질문의 답변이 일치하지 않습니다."); }
+    }
+
+    async function openMyInfo() {
+        if(isAdmin) {
+            const newPw = prompt("변경할 관리자 비밀번호 (취소시 유지)");
+            if(newPw) {
+                config.pw = newPw.trim();
+                const newQ = prompt("관리자 보안 질문 선택 (1~5번 숫자 입력)\n1. 졸업초교 2. 보물1호 3. 해외여행 4. 어머니성함 5. 운동선수");
+                const qList = ["졸업한 초등학교의 이름은?", "가장 기억에 남는 보물 1호는?", "처음으로 가본 해외 여행지는?", "어머니의 성함은?", "가장 좋아하는 운동 선수는?"];
+                if(newQ >=1 && newQ <=5) config.recoveryQ = qList[newQ-1];
+                const newA = prompt("관리자 보안 답변 입력 (취소시 유지)");
+                if(newA) config.recoveryA = newA.trim();
+                await saveToFirebase(); alert("관리자 정보가 변경되었습니다.");
+            }
+        } else {
+            document.getElementById('setupTitle').innerText = "✏️ 내 정보 수정 (변경 후 다시 로그인해야 합니다)";
+            sessionStorage.setItem('pendingUser', JSON.stringify(currentUser));
+            document.getElementById('setupOverlay').style.display = 'flex';
+        }
+    }
+
+    function copyAccount() {
+        const acc = config.bankAccount.replace(/\n/g, ' '); 
+        navigator.clipboard.writeText(acc).then(() => alert("계좌번호가 복사되었습니다."));
+    }
+    
+    async function editAccount() {
+        const newAcc = prompt("수정할 계좌번호 및 정보를 입력하세요.\n줄바꿈은 \\n으로 입력하세요.", config.bankAccount.replace(/\n/g, '\\n'));
+        if(newAcc) {
+            config.bankAccount = newAcc.trim().replace(/\\n/g, '\n');
+            await saveToFirebase();
+            alert("수정 완료되었습니다.");
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const ym = new Date().toISOString().substring(0, 7);
+        ['viewTargetMonthStart', 'viewTargetMonthEnd', 'viewExMonthStart', 'viewExMonthEnd', 'viewCombinedMonthStart', 'viewCombinedMonthEnd', 'reportMonth', 'exReportMonth', 'searchStart', 'searchEnd'].forEach(id => {
+            if(document.getElementById(id)) document.getElementById(id).value = ym;
+        });
+        
+        if(isAdmin) { 
+            document.getElementById('loginOverlay').style.display = 'none'; 
+            applyAdminUI(); 
+        } else if(localStorage.getItem('isGuestPermanent') === 'true') {
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('memberFilterDiv').style.display = 'flex';
+            document.getElementById('myDisplayName').innerText = currentUser.name;
+            
+            document.getElementById('tabExpenseBtn').style.display = 'none'; 
+            document.getElementById('tabInputBtn').innerText = '본인 회비 납부현황';
+            document.getElementById('tabCombinedBtn').innerText = '위원회 월별 수입 및 지출현황';
+            document.getElementById('tabSearchBtn').innerText = '본인 납부 상세조회';
+            
+            document.getElementById('searchType').style.display = 'none'; 
+            document.getElementById('searchMemberDiv').style.display = 'none'; 
+            document.getElementById('searchControlRow').style.display = 'flex'; 
+            document.getElementById('searchMainTitle').innerText = '🔍 나의 미납 현황 상세조회';
+            document.getElementById('searchPrintTitle').innerText = '나의 미납 현황 조회 결과';
+        }
+        
+        db.ref('jangbu').on('value', (snapshot) => {
+            const data = snapshot.val() || {};
+            config = { pw: "1234", recoveryQ: "나의 보물 1호는?", recoveryA: "가족", bankAccount: "MG 새마을금고\n9003-2323-6645-9\n예금주 김영훈", ...(data.config || {}) };
+            
+            if (config.bankAccount === "MG새마을금고 : 9003-2323-6645-9 예금주 김영훈" || config.bankAccount === "MG 새마을금고 : 9003-2323-6645-9 예금주 김영훈" || config.bankAccount.indexOf('\n') === -1) {
+                if(config.bankAccount.includes('9003-2323')) {
+                    config.bankAccount = "MG 새마을금고\n9003-2323-6645-9\n예금주 김영훈";
+                }
+            }
+            
+            const dbMembers = data.members || [];
+            
+            let mergedMembers = INITIAL_MEMBERS.map(m => {
+                const dbM = dbMembers.find(dm => dm.name === m.name);
+                if(dbM) {
+                    dbM.joinDate = dbM.joinDate || dbM.startDate || dbM['위촉일'] || "";
+                    dbM.leaveDate = dbM.leaveDate || dbM.endDate || dbM['해촉일'] || "";
+                    return { ...m, ...dbM, tel: m.tel };
+                }
+                return m;
+            });
+
+            dbMembers.forEach(dbM => {
+                if(!mergedMembers.find(m => m.name === dbM.name)) {
+                    dbM.joinDate = dbM.joinDate || dbM.startDate || dbM['위촉일'] || "";
+                    dbM.leaveDate = dbM.leaveDate || dbM.endDate || dbM['해촉일'] || "";
+                    mergedMembers.push(dbM);
+                }
+            });
+
+            membersList = mergedMembers;
+            records = data.records || [];
+            expenseRecords = data.expenses || [];
+            
+            const pureMembers = membersList.filter(m => !NON_MEMBER_ITEMS.includes(m.name.trim()) && m.name.trim() !== "신정식" && (!m.leaveDate || m.leaveDate.substring(0,7) >= new Date().toISOString().substring(0, 7)));
+            const countEl = document.getElementById('realtimeMemberCount');
+            if(countEl) countEl.innerText = `현재 실시간 회원수 : ${pureMembers.length}명`;
+            
+            const accDisplay = document.getElementById('accountInfoDisplay');
+            if(accDisplay) accDisplay.innerHTML = config.bankAccount.replace(/\n/g, '<br>');
+
+            renderMemberSelects();
+            renderRecentTable();
+            renderExpenseTable();
+            if(document.getElementById('tab-combined').style.display === 'block') { renderCombinedTable(); if(isAdmin) calculateRangeStats(); }
+            if(document.getElementById('tab-member').style.display === 'block') { renderMemberTable(); }
+            
+            if(localStorage.getItem('lastTab') === 'search') { searchData(); }
+        });
+        switchTab(localStorage.getItem('lastTab') || 'input');
+    });
+
+    function applyAdminUI() {
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+        document.querySelectorAll('.admin-form-box').forEach(el => el.style.display = 'flex');
+    }
+
+    function renderMemberSelects() {
+        const currentMonth = new Date().toISOString().substring(0, 7);
+        let inputPure = membersList.filter(m => !NON_MEMBER_ITEMS.includes(m.name.trim()) && (!m.leaveDate || m.leaveDate.substring(0,7) >= currentMonth)).sort((a,b) => a.name.localeCompare(b.name, 'ko'));
+        let searchPure = membersList.filter(m => !NON_MEMBER_ITEMS.includes(m.name.trim())).sort((a,b) => a.name.localeCompare(b.name, 'ko'));
+        
+        let inputEl = document.getElementById('memberName');
+        if(inputEl) { 
+            inputEl.innerHTML = ''; 
+            inputPure.forEach(m => inputEl.appendChild(new Option(m.name, m.name))); 
+            
+            let sep = document.createElement('option');
+            sep.text = "---";
+            sep.disabled = true;
+            inputEl.add(sep);
+            NON_MEMBER_ITEMS.forEach(item => inputEl.appendChild(new Option(item, item)));
+        }
+        
+        let searchEl = document.getElementById('searchMemberName');
+        if(searchEl) { 
+            searchEl.innerHTML = ''; 
+            searchPure.forEach(m => searchEl.appendChild(new Option(m.name, m.name))); 
+            
+            let sep2 = document.createElement('option');
+            sep2.text = "---";
+            sep2.disabled = true;
+            searchEl.add(sep2);
+            NON_MEMBER_ITEMS.forEach(item => searchEl.appendChild(new Option(item, item)));
+        }
+        
+        if (inputEl && inputEl.options.length > 0 && document.getElementById('payCategory').value === '월회비') { onChangeMemberOrCat(); }
+    }
+
+    function renderMemberTable() {
+        const tbody = document.getElementById('memberBody');
+        if(!tbody) return;
+        tbody.innerHTML = '';
+        let displayMembers = membersList.filter(m => !NON_MEMBER_ITEMS.includes(m.name.trim()));
+        displayMembers.sort((a,b) => a.name.localeCompare(b.name, 'ko')).forEach((m, idx) => {
+            let originalIndex = membersList.findIndex(x => x.name === m.name);
+            tbody.innerHTML += `<tr>
+                <td>${idx + 1}</td>
+                <td><b>${m.name}</b></td>
+                <td>${m.tel ? m.tel.replace(/(\d{3})(\d{3,4})(\d{4})/, '$1-$2-$3') : '-'}</td>
+                <td>${Number(m.dues || 0).toLocaleString()}원</td>
+                <td>${m.joinDate ? m.joinDate.substring(0,7) : '-'}</td>
+                <td>${m.leaveDate ? m.leaveDate.substring(0,7) : '-'}</td>
+                <td class="no-print">
+                    <button class="btn-blue" style="height:28px; font-size:11px; padding:0 10px;" onclick="startEditMember(${originalIndex})">수정</button>
+                    <button class="btn-red" style="height:28px; font-size:11px; padding:0 10px;" onclick="deleteMember(${originalIndex})">삭제</button>
+                </td>
+            </tr>`;
+        });
+    }
+
+    async function saveMember() {
+        let name = document.getElementById('newMemName').value.trim();
+        let tel = document.getElementById('newMemTel').value.trim();
+        let dues = document.getElementById('newMemDues').value;
+        let joinDate = document.getElementById('newMemJoinDate').value;
+        let leaveDate = document.getElementById('newMemLeaveDate').value;
+        
+        if(!name) { alert("성명을 입력하세요."); return; }
+        
+        let newMem = { 
+            name, 
+            tel, 
+            dues: Number(dues) || 0,
+            joinDate: joinDate || "",
+            leaveDate: leaveDate || ""
+        };
+
+        if(memberEditIndex > -1) {
+            newMem = { ...membersList[memberEditIndex], ...newMem };
+            membersList[memberEditIndex] = newMem;
+        } else {
+            if(membersList.find(m => m.name === name)) { alert("이미 등록된 이름입니다."); return; }
+            membersList.push(newMem);
+        }
+        
+        await saveToFirebase();
+        renderMemberTable();
+        renderMemberSelects();
+        resetMemberForm();
+        alert("저장되었습니다.");
+    }
+
+    function startEditMember(idx) {
+        memberEditIndex = idx;
+        let m = membersList[idx];
+        document.getElementById('newMemName').value = m.name;
+        document.getElementById('newMemTel').value = m.tel || '';
+        document.getElementById('newMemDues').value = m.dues || 30000;
+        document.getElementById('newMemJoinDate').value = m.joinDate ? m.joinDate.substring(0,7) : '';
+        document.getElementById('newMemLeaveDate').value = m.leaveDate ? m.leaveDate.substring(0,7) : '';
+        document.getElementById('memberFormTitle').innerText = "👤 회원 정보 수정";
+        document.getElementById('memCancelBtn').style.display = "inline-flex";
+        window.scrollTo(0, 0);
+    }
+
+    function resetMemberForm() {
+        memberEditIndex = -1;
+        document.getElementById('newMemName').value = "";
+        document.getElementById('newMemTel').value = "";
+        document.getElementById('newMemDues').value = "30000";
+        document.getElementById('newMemJoinDate').value = "";
+        document.getElementById('newMemLeaveDate').value = "";
+        document.getElementById('memberFormTitle').innerText = "👤 신규 회원 등록";
+        document.getElementById('memCancelBtn').style.display = "none";
+    }
+
+    async function deleteMember(idx) {
+        if(confirm(`'${membersList[idx].name}' 회원을 정말 삭제하시겠습니까?`)) {
+            membersList.splice(idx, 1);
+            await saveToFirebase();
+            renderMemberTable();
+            renderMemberSelects();
+        }
+    }
+
+    function renderRecentTable() {
+        let s = document.getElementById('viewTargetMonthStart').value, e = document.getElementById('viewTargetMonthEnd').value;
+        let tbody = document.getElementById('recentBody'), total = 0;
+        tbody.innerHTML = '';
+        records.filter(r => r.reportMonth >= s && r.reportMonth <= e && (isAdmin || r.name === currentUser.name)).forEach(r => {
+            total += Number(r.amount);
+            let typeName = r.type === 'dues' ? '월회비' : (r.type === 'admission' ? '입회비' : '기타');
+            tbody.innerHTML += `<tr><td>${typeName}</td><td><b>${r.name}</b></td><td>${r.date}</td><td>${r.target}</td><td>${r.months||'-'}</td><td>${r.method}</td><td>${Number(r.amount).toLocaleString()}</td><td>${r.note||'-'}</td><td class="admin-only no-print" style="display:${isAdmin?'table-cell':'none'}"><button class="btn-blue" onclick="startEdit(${records.indexOf(r)})">수정</button> <button class="btn-red" onclick="deleteRecord(${records.indexOf(r)})">삭제</button></td></tr>`;
+        });
+        document.getElementById('recentFoot').innerHTML = total > 0 ? `<tr class="summary-row"><td colspan="6">기간 합계:</td><td colspan="3">${total.toLocaleString()}원</td></tr>` : '';
+    }
+
+    function switchTab(t) { 
+        localStorage.setItem('lastTab', t); 
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active')); 
+        document.querySelectorAll('.section-box').forEach(x => x.style.display = 'none'); 
+        document.getElementById(`tab-${t}`).style.display='block'; 
+        
+        let tabBtn = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}Btn`);
+        if(tabBtn) tabBtn.classList.add('active'); 
+        
+        if(t==='expense') renderExpenseTable(); 
+        else if(t==='combined') { renderCombinedTable(); if(isAdmin) calculateRangeStats(); }
+        else if(t==='search') { searchData(); } 
+        else if(t==='member') { renderMemberTable(); }
+    }
+    
+    function logout() { localStorage.clear(); location.reload(); }
+    
+    function toggleForm() { 
+        let memberName = document.getElementById('memberName').value;
+        let isD = document.getElementById('payCategory').value === '월회비' && !NON_MEMBER_ITEMS.includes(memberName); 
+        document.getElementById('duesPeriodDiv').style.display = isD ? 'flex' : 'none'; 
+        document.getElementById('customCategoryDiv').style.display = isD ? 'none' : 'block'; 
+    }
+
+    function calcMonths() { let s = document.getElementById('startMonth').value, e = document.getElementById('endMonth').value; if(s && e) { let sd = new Date(s), ed = new Date(e), diff = (ed.getFullYear()-sd.getFullYear())*12 + (ed.getMonth()-sd.getMonth()) + 1; document.getElementById('payMonths').value = diff > 0 ? diff : 0; } }
+    function autoCalcAmount() { let n = document.getElementById('memberName').value, m = Number(document.getElementById('payMonths').value)||1, mem = membersList.find(x => x.name === n); if(mem && document.getElementById('payCategory').value === '월회비') document.getElementById('payAmount').value = mem.dues * m; }
+    
+    function syncMonthsWithPayDate(v) { 
+        let month = v.substring(0,7);
+        document.getElementById('reportMonth').value = month; 
+        document.getElementById('viewTargetMonthStart').value = month;
+        document.getElementById('viewTargetMonthEnd').value = month;
+        renderRecentTable(); 
+    }
+    
+    function syncExMonth(v) {
+        let month = v.substring(0,7);
+        document.getElementById('exReportMonth').value = month;
+        document.getElementById('viewExMonthStart').value = month;
+        document.getElementById('viewExMonthEnd').value = month;
+        renderExpenseTable();
+    }
+
+    function getNextDuesMonth(memberName) {
+        let isPaidInFull = PAID_IN_FULL_MEMBERS.includes(memberName);
+        let lastPaid = isPaidInFull ? "2024-12" : "";
+        if (MANUAL_OVERRIDES[memberName] && MANUAL_OVERRIDES[memberName].lastPayTargetMonth) {
+            lastPaid = MANUAL_OVERRIDES[memberName].lastPayTargetMonth;
+        }
+
+        records.filter(r => r.name === memberName && r.type === 'dues' && r.id !== (editIndex>-1?records[editIndex].id:-1)).forEach(r => {
+            let parts = r.target.split(' ~ ');
+            if(parts.length === 2) {
+                let e = "20" + parts[1].trim().replace(/\./g, '-');
+                if(lastPaid === "" || e > lastPaid) lastPaid = e;
+            }
+        });
+        
+        if(!lastPaid) {
+            let mData = membersList.find(m => m.name === memberName);
+            if(mData && mData.joinDate) {
+                let d = new Date(mData.joinDate + "-01");
+                d.setMonth(d.getMonth() - 1);
+                lastPaid = d.toISOString().substring(0, 7);
+            } else {
+                lastPaid = "2024-10"; 
+            }
+        }
+        
+        let nextMonth = new Date(lastPaid + "-01");
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        return nextMonth.toISOString().substring(0, 7);
+    }
+    
+    function validateStartMonth() {
+        if(document.getElementById('payCategory').value !== '월회비') return;
+        let memberName = document.getElementById('memberName').value;
+        if (!memberName || NON_MEMBER_ITEMS.includes(memberName)) return;
+
+        let nextStr = getNextDuesMonth(memberName);
+        let selectedStart = document.getElementById('startMonth').value;
+
+        if (selectedStart && selectedStart > nextStr) {
+            let yy = nextStr.substring(2, 4);
+            let mm = nextStr.substring(5, 7);
+            alert(`회비납부 ${yy}년 ${Number(mm)}월분이 누락되었습니다. 순차적으로 기입해주세요.`);
+            document.getElementById('startMonth').value = nextStr;
+            if(document.getElementById('endMonth').value < nextStr) {
+                document.getElementById('endMonth').value = nextStr;
+            }
+        }
+    }
+
+    function onChangeMemberOrCat() {
+        let memberName = document.getElementById('memberName').value;
+        let catSelect = document.getElementById('payCategory');
+        
+        if (NON_MEMBER_ITEMS.includes(memberName)) {
+            let exists = Array.from(catSelect.options).some(opt => opt.value === memberName);
+            if (exists) {
+                catSelect.value = memberName;
+            } else {
+                catSelect.value = '기타';
+            }
+            document.getElementById('customCategory').value = memberName;
+        }
+
+        toggleForm();
+        autoSetNextDuesMonth();
+        calcMonths(); 
+        autoCalcAmount();
+    }
+
+    function autoSetNextDuesMonth() {
+        if(document.getElementById('payCategory').value !== '월회비') return;
+        let memberName = document.getElementById('memberName').value;
+        if (!memberName || NON_MEMBER_ITEMS.includes(memberName)) return;
+        
+        let nextStr = getNextDuesMonth(memberName);
+        
+        document.getElementById('startMonth').value = nextStr;
+        document.getElementById('endMonth').value = nextStr;
+    }
+    
+    async function saveRecord() { 
+        let name = document.getElementById('memberName').value, amt = document.getElementById('payAmount').value, cat = document.getElementById('payCategory').value;
+        if(!name || !amt) return;
+
+        let isDues = (cat === '월회비') && !NON_MEMBER_ITEMS.includes(name);
+
+        if (isDues) {
+            let sMonth = document.getElementById('startMonth').value;
+            let eMonth = document.getElementById('endMonth').value;
+            if(!sMonth || !eMonth || sMonth > eMonth) { alert("납부해당월 기간을 올바르게 설정해주세요."); return; }
+            
+            let nextStr = getNextDuesMonth(name);
+            if (sMonth > nextStr) {
+                let yy = nextStr.substring(2, 4);
+                let mm = nextStr.substring(5, 7);
+                alert(`회비납부 ${yy}년 ${Number(mm)}월분이 누락되었습니다. 순차적으로 기입해주세요.`);
+                document.getElementById('startMonth').value = nextStr;
+                if(document.getElementById('endMonth').value < nextStr) document.getElementById('endMonth').value = nextStr;
+                calcMonths();
+                autoCalcAmount();
+                return;
+            }
+
+            let paidMonths = new Set();
+            let isPaidInFull = PAID_IN_FULL_MEMBERS.includes(name);
+            let lastPaidOverride = isPaidInFull ? "2024-12" : "";
+            if (MANUAL_OVERRIDES[name] && MANUAL_OVERRIDES[name].lastPayTargetMonth) lastPaidOverride = MANUAL_OVERRIDES[name].lastPayTargetMonth;
+            
+            if (lastPaidOverride) {
+                let startB = new Date("2020-01-01");
+                let endOv = new Date(lastPaidOverride + "-01");
+                while(startB <= endOv) { paidMonths.add(startB.toISOString().substring(0,7)); startB.setMonth(startB.getMonth() + 1); }
+            }
+
+            records.filter(r => r.name === name && r.type === 'dues' && r.id !== (editIndex>-1?records[editIndex].id:-1)).forEach(r => {
+                let parts = r.target.split(' ~ ');
+                if(parts.length === 2) {
+                    let curr = new Date("20" + parts[0].trim() + "-01");
+                    let last = new Date("20" + parts[1].trim() + "-01");
+                    while(curr <= last) { paidMonths.add(curr.toISOString().substring(0, 7)); curr.setMonth(curr.getMonth() + 1); }
+                }
+            });
+            
+            let currSel = new Date(sMonth + "-01");
+            let endSel = new Date(eMonth + "-01");
+            let hasOverlap = false;
+            let overlapMonth = "";
+            while(currSel <= endSel) {
+                let mStr = currSel.toISOString().substring(0, 7);
+                if(paidMonths.has(mStr)) { hasOverlap = true; overlapMonth = mStr; break; }
+                currSel.setMonth(currSel.getMonth() + 1);
+            }
+            
+            if(hasOverlap) {
+                alert(`이미 회비가 납부된 월(${overlapMonth})이 포함되어 있습니다. 납부 기간을 확인해주세요.`);
+                return;
+            }
+        }
+
+        let target = isDues ? `${document.getElementById('startMonth').value.substring(2)} ~ ${document.getElementById('endMonth').value.substring(2)}` : (document.getElementById('customCategory').value || cat);
+        let newR = { id: editIndex>-1?records[editIndex].id:Date.now(), type: (isDues?'dues':'etc'), name, date: document.getElementById('payDate').value, target, months: (isDues ? document.getElementById('payMonths').value : ""), method: document.getElementById('payMethod').value, amount: amt, reportMonth: document.getElementById('reportMonth').value, note: document.getElementById('payNote').value };
+        if(editIndex>-1) records[editIndex] = newR; else records.push(newR);
+        await saveToFirebase(); renderRecentTable(); resetForm(); alert("저장완료");
+    }
+
+    function resetForm() { editIndex = -1; document.getElementById('formTitle').innerText = "💰 새 입금 등록"; document.getElementById('payAmount').value = ""; document.getElementById('cancelBtn').style.display = "none"; }
+    
+    function startEdit(idx) {
+        editIndex = idx;
+        let r = records[idx];
+        document.getElementById('payDate').value = r.date;
+        document.getElementById('memberName').value = r.name;
+        document.getElementById('payCategory').value = (r.type === 'dues' ? '월회비' : (['찬조금','입회비','예금이자','체크카드 캐쉬백'].includes(r.target) ? r.target : '기타'));
+        toggleForm();
+        if(r.type === 'dues') {
+            let [s, e] = r.target.split(' ~ ');
+            if(s && e) {
+                document.getElementById('startMonth').value = "20" + s.trim().replace(/\./g, '-');
+                document.getElementById('endMonth').value = "20" + e.trim().replace(/\./g, '-');
+                document.getElementById('payMonths').value = r.months || 1;
+            }
+        } else {
+            if(!['찬조금','입회비','예금이자','체크카드 캐쉬백'].includes(r.target)) document.getElementById('customCategory').value = r.target;
+        }
+        document.getElementById('payMethod').value = r.method;
+        document.getElementById('payAmount').value = r.amount;
+        document.getElementById('reportMonth').value = r.reportMonth;
+        document.getElementById('payNote').value = r.note || "";
+        document.getElementById('formTitle').innerText = "💰 입금 내역 수정";
+        document.getElementById('cancelBtn').style.display = "inline-flex";
+        window.scrollTo(0, 0);
+    }
+    
+    async function deleteRecord(idx) { if(confirm('삭제하시겠습니까?')) { records.splice(idx,1); await saveToFirebase(); renderRecentTable(); } }
+
+    function renderExpenseTable() {
+        const s = document.getElementById('viewExMonthStart').value; 
+        const e = document.getElementById('viewExMonthEnd').value; 
+        const tbody = document.getElementById('expenseBody'), tfoot = document.getElementById('expenseFoot'); 
+        if(!s || !e) return;
+        tbody.innerHTML = ''; tfoot.innerHTML = ''; let totalIncome = INITIAL_CARRY_OVER, totalExpense = 0; 
+        records.forEach(r => { if(r.reportMonth < s) totalIncome += Number(r.amount); }); 
+        expenseRecords.forEach(r => { if(r.reportMonth < s) totalIncome -= Number(r.amount); }); 
+        document.getElementById('carryOverDisplay').innerText = `이월금(${s}): ${totalIncome.toLocaleString()}원`; 
+        
+        const currentMonthExpenses = expenseRecords.filter(r => r.reportMonth >= s && r.reportMonth <= e).sort((a,b) => new Date(a.date) - new Date(b.date));
+        let monthCounts = {}; // 월별 카운트 저장 객체
+        
+        currentMonthExpenses.forEach((r, rowIdx) => { 
+            totalExpense += Number(r.amount); 
+            
+            // 월별로 순번 매기기
+            if (!monthCounts[r.reportMonth]) monthCounts[r.reportMonth] = 0;
+            monthCounts[r.reportMonth]++;
+            const displayCount = monthCounts[r.reportMonth];
+            
+            let recs = '-';
+            if(r.receipts && r.receipts.length > 0) { recs = r.receipts.map((rec, i) => `<span class="receipt-link" onclick="viewReceipt('${rec.data}')">증빙 ${r.reportMonth.substring(2)}-${displayCount}${r.receipts.length>1?'('+ (i+1)+')':''}</span>`).join(' '); }
+            else if(r.receipt) { recs = `<span class="receipt-link" onclick="viewReceipt('${r.receipt}')">증빙 ${r.reportMonth.substring(2)}-${displayCount}</span>`; }
+            tbody.innerHTML += `<tr class="expense-row"><td>${r.date}</td><td>${r.category}</td><td>${Number(r.amount).toLocaleString()}</td><td>${r.method}</td><td>${r.note||'-'}</td><td>${recs}</td><td class="admin-only no-print" style="display:${isAdmin?'table-cell':'none'}"><button class="btn-blue" onclick="startExEdit(${expenseRecords.indexOf(r)})">수정</button> <button class="btn-red" onclick="deleteExpense(${expenseRecords.indexOf(r)})">삭제</button></td></tr>`; 
+        }); 
+        const inAmt = records.filter(r => r.reportMonth >= s && r.reportMonth <= e).reduce((a, r) => a + Number(r.amount), 0); 
+        tfoot.innerHTML = `<tr class="summary-row" style="background:#fff5f5;"><td colspan="2" style="text-align:right">수입: +${inAmt.toLocaleString()} / 지출: -${totalExpense.toLocaleString()}</td><td colspan="5" style="color:#0056b3;">현재 잔액: ${(totalIncome + inAmt - totalExpense).toLocaleString()}원</td></tr>`; 
+    }
+    
+    function renderCombinedTable() {
+        const s = document.getElementById('viewCombinedMonthStart').value;
+        const e = document.getElementById('viewCombinedMonthEnd').value;
+        const tbody = document.getElementById('combinedBody'), tfoot = document.getElementById('combinedFoot');
+        if(!s || !e) return;
+        tbody.innerHTML = ''; let balance = INITIAL_CARRY_OVER;
+        records.forEach(r => { if(r.reportMonth < s) balance += Number(r.amount); });
+        expenseRecords.forEach(r => { if(r.reportMonth < s) balance -= Number(r.amount); });
+        const list = [...records.filter(r => r.reportMonth >= s && r.reportMonth <= e).map(r => ({ ...r, cType: '수입' })), 
+                      ...expenseRecords.filter(r => r.reportMonth >= s && r.reportMonth <= e).map(r => ({ ...r, cType: '지출' }))].sort((a,b) => new Date(a.date) - new Date(b.date));
+        let tIn = 0, tOut = 0;
+        list.forEach(item => {
+            const isIn = item.cType === '수입', amt = Number(item.amount);
+            if(isIn) { balance += amt; tIn += amt; } else { balance -= amt; tOut += amt; }
+            tbody.innerHTML += `<tr class="${isIn?'income-row':'expense-row'}"><td>${item.date}</td><td><span style="color:${isIn?'green':'red'};">${item.cType}</span></td><td>${isIn?item.name:item.category}</td><td style="text-align:left;">${isIn?item.target:(item.note||'-')}</td><td>${isIn?amt.toLocaleString():'-'}</td><td>${!isIn?amt.toLocaleString():'-'}</td><td style="font-weight:bold;">${balance.toLocaleString()}</td></tr>`;
+        });
+        tfoot.innerHTML = `<tr class="summary-row"><td colspan="4">기간 요약</td><td style="color:green;">+${tIn.toLocaleString()}</td><td style="color:red;">-${tOut.toLocaleString()}</td><td>${balance.toLocaleString()}</td></tr>`;
+    }
+
+    function calculateRangeStats() { 
+        const start = document.getElementById('statsStartMonth').value, end = document.getElementById('statsEndMonth').value;
+        const tbody = document.getElementById('monthlyStatsBody'), tfoot = document.getElementById('monthlyStatsFoot');
+        if(!start || !end) return;
+        tbody.innerHTML = ''; tfoot.innerHTML = '';
+        let rIn = 0, rOut = 0, months = [], curr = new Date(start + "-01"), last = new Date(end + "-01");
+        while(curr <= last) { months.push(curr.toISOString().substring(0, 7)); curr.setMonth(curr.getMonth() + 1); }
+        months.forEach(m => {
+            let mIn = 0, mOut = 0, mBal = INITIAL_CARRY_OVER;
+            records.forEach(r => { if(r.reportMonth === m) mIn += Number(r.amount); if(r.reportMonth <= m) mBal += Number(r.amount); });
+            expenseRecords.forEach(r => { if(r.reportMonth === m) mOut += Number(r.amount); if(r.reportMonth <= m) mBal -= Number(r.amount); });
+            rIn += mIn; rOut += mOut;
+            tbody.innerHTML += `<tr><td><b>${m}</b></td><td style="color:green;">+${mIn.toLocaleString()}</td><td style="color:red;">-${mOut.toLocaleString()}</td><td>${mBal.toLocaleString()}원</td></tr>`;
+        });
+        tfoot.innerHTML = `<tr class="summary-row"><td colspan="3">기간 수입: +${rIn.toLocaleString()} / 지출: -${rOut.toLocaleString()}</td><td>최종: ${(INITIAL_CARRY_OVER + records.filter(r=>r.reportMonth<=end).reduce((a,b)=>a+Number(b.amount),0) - expenseRecords.filter(r=>r.reportMonth<=end).reduce((a,b)=>a+Number(b.amount),0)).toLocaleString()}원</td></tr>`;
+    }
+
+    function toggleSearchType() { document.getElementById('searchMemberDiv').style.display = document.getElementById('searchType').value === 'member' ? 'block' : 'none'; }
+    
+    function searchData() { 
+        const type = isAdmin ? document.getElementById('searchType').value : 'member';
+        const start = document.getElementById('searchStart').value;
+        const end = document.getElementById('searchEnd').value;
+        const targetMember = isAdmin ? document.getElementById('searchMemberName').value.trim() : currentUser.name;
+        const header = document.getElementById('tableHeader'), body = document.getElementById('tableBody'), foot = document.getElementById('tableFoot'), notice = document.getElementById('searchNotice');
+        body.innerHTML = ''; foot.innerHTML = ''; notice.style.display = 'none'; notice.innerHTML = '';
+        if(!start || !end) { alert("기간을 설정하세요."); return; }
+        
+        if (type === 'unpaid') {
+            header.innerHTML = `<tr><th>성명</th><th>월회비 금액</th><th>미납 개월수</th><th>미납 기간</th><th>미납 총액</th></tr>`;
+            membersList.filter(m => !NON_MEMBER_ITEMS.includes(m.name) && m.name.trim() !== "신정식" && !FEE_EXEMPTION_MEMBERS.includes(m.name.trim())).sort((a,b)=>a.name.localeCompare(b.name,'ko')).forEach(m => {
+                
+                if(m.leaveDate && m.leaveDate.substring(0,7) < start) return;
+
+                let isPaidInFull = PAID_IN_FULL_MEMBERS.includes(m.name.trim());
+                let lastPayTargetMonth = isPaidInFull ? "2024-12" : "-";
+                if (MANUAL_OVERRIDES[m.name.trim()] && MANUAL_OVERRIDES[m.name.trim()].lastPayTargetMonth) { lastPayTargetMonth = MANUAL_OVERRIDES[m.name.trim()].lastPayTargetMonth; }
+                records.filter(r => r.name.trim() === m.name.trim() && r.type === 'dues').forEach(r => {
+                    let [s, e] = r.target.split(' ~ ');
+                    if(s && e) { let eStr = "20" + e.replace(/\./g, '-'); if(lastPayTargetMonth === "-" || eStr > lastPayTargetMonth) lastPayTargetMonth = eStr; }
+                });
+                
+                let unpStart = lastPayTargetMonth !== "-" ? (new Date(new Date(lastPayTargetMonth + "-01").setMonth(new Date(lastPayTargetMonth + "-01").getMonth() + 1))).toISOString().substring(0, 7) : "2024-11";
+                
+                if (m.joinDate && m.joinDate.substring(0,7) > unpStart) {
+                    unpStart = m.joinDate.substring(0,7);
+                }
+
+                let finalUnpaid = []; 
+                let cD = new Date(unpStart + "-01");
+                
+                let effectiveEnd = end;
+                if (m.leaveDate && m.leaveDate.substring(0,7) < end) {
+                    effectiveEnd = m.leaveDate.substring(0,7);
+                }
+                let eD = new Date(effectiveEnd + "-01");
+
+                while(cD <= eD) { finalUnpaid.push(cD.toISOString().substring(0, 7)); cD.setMonth(cD.getMonth() + 1); }
+                
+                if(finalUnpaid.length > 0) {
+                    let startStr = finalUnpaid[0].split('-')[0] + '년 ' + finalUnpaid[0].split('-')[1] + '월';
+                    let endStr = finalUnpaid[finalUnpaid.length - 1].split('-')[0] + '년 ' + finalUnpaid[finalUnpaid.length - 1].split('-')[1] + '월';
+                    let periodText = finalUnpaid.length > 1 ? `${startStr} ~ ${endStr}` : `${startStr}`;
+                    body.innerHTML += `<tr><td>${m.name}</td><td>${Number(m.dues).toLocaleString()}</td><td>${finalUnpaid.length}</td><td style="font-size:12px;">${periodText} (${finalUnpaid.length}개월분)</td><td style="font-weight:bold; color:red;">${(finalUnpaid.length * m.dues).toLocaleString()}원</td></tr>`;
+                }
+            });
+        } else {
+            header.innerHTML = `<tr><th>장부기입월</th><th>성명</th><th>납부일자</th><th>내역</th><th>방법</th><th>금액</th><th>비고</th></tr>`;
+            let filtered = records.filter(r => r.reportMonth >= start && r.reportMonth <= end);
+            if(type === 'member') {
+                filtered = filtered.filter(r => r.name.trim() === targetMember);
+                notice.style.display = 'block';
+                if (FEE_EXEMPTION_MEMBERS.includes(targetMember)) { notice.innerHTML = `<div style="font-weight:bold; color:#0056b3;">※ 회비 면제 대상입니다.</div>`; } 
+                else {
+                    let isPaidInFull = PAID_IN_FULL_MEMBERS.includes(targetMember);
+                    let mData = membersList.find(m => m.name.trim() === targetMember);
+                    let infoHtml = "";
+                    if(isPaidInFull && start < "2024-11") { infoHtml += `<div style="margin-bottom:10px;">※ 회원님은 2024년 회비를 모두 완납하신 명단에 포함되어 있습니다.</div>`; } 
+                    else if (!isPaidInFull && start < "2024-11") { infoHtml += `<div style="margin-bottom:10px;">※ 세부현황은 2024년 11월부터 조회됩니다.</div>`; }
+                    if(mData) {
+                        const todayYM = new Date().toISOString().substring(0, 7);
+                        let lastPayDate = "-", lastPayTargetMonth = isPaidInFull ? "2024-12" : "-";
+                        if (MANUAL_OVERRIDES[targetMember]) { if (MANUAL_OVERRIDES[targetMember].lastPayDate) lastPayDate = MANUAL_OVERRIDES[targetMember].lastPayDate; if (MANUAL_OVERRIDES[targetMember].lastPayTargetMonth) lastPayTargetMonth = MANUAL_OVERRIDES[targetMember].lastPayTargetMonth; }
+                        records.filter(r => r.name.trim() === targetMember && r.type === 'dues').forEach(r => {
+                            let [s, e] = r.target.split(' ~ ');
+                            if(s && e) { let eStr = "20" + e.replace(/\./g, '-'); if (lastPayTargetMonth === "-" || eStr > lastPayTargetMonth) { lastPayTargetMonth = eStr; } }
+                            if (lastPayDate === "-" || r.date > lastPayDate) { lastPayDate = r.date; }
+                        });
+                        
+                        let unpStart = "-";
+                        if (lastPayTargetMonth !== "-") {
+                            unpStart = (new Date(new Date(lastPayTargetMonth + "-01").setMonth(new Date(lastPayTargetMonth + "-01").getMonth() + 1))).toISOString().substring(0, 7);
+                        } else {
+                            unpStart = "2024-11";
+                        }
+
+                        if (mData.joinDate && mData.joinDate.substring(0,7) > unpStart) {
+                            unpStart = mData.joinDate.substring(0,7);
+                        }
+
+                        let unp = [];
+                        let c = new Date(unpStart + "-01");
+                        
+                        let effectiveEnd = todayYM;
+                        if (mData.leaveDate && mData.leaveDate.substring(0,7) < todayYM) {
+                            effectiveEnd = mData.leaveDate.substring(0,7);
+                        }
+                        let l = new Date(effectiveEnd + "-01");
+
+                        while(c <= l) { unp.push(c.toISOString().substring(0, 7)); c.setMonth(c.getMonth() + 1); }
+                        
+                        infoHtml += `<div class="unpaid-info"><span style="color:black;">[납부 및 미납 현황 정보]</span><br><span style="color:blue;">• 최종 실제 납부일: ${lastPayDate}</span><br><span style="color:blue;">• 최종 회비 납부 해당월: ${lastPayTargetMonth}</span><br>`;
+                        if(unp.length > 0) { infoHtml += `<span style="color:red;">• 미납 시작월: ${unpStart}</span><br><span style="color:red;">• 미납 현황: 총 ${unp.length}개월 미납 (미납금액: ${(unp.length * mData.dues).toLocaleString()}원)</span>`; } 
+                        else { infoHtml += `<span style="color:#28a745;">• 미납 현황: 오늘 기준 미납 없음 (완납)</span>`; }
+                        
+                        if(mData.leaveDate && mData.leaveDate.substring(0,7) <= todayYM) {
+                            infoHtml += `<br><span style="color:#6c757d;">• 해촉 반영: ${mData.leaveDate.substring(0,7)}까지만 계산됨</span>`;
+                        }
+                        
+                        infoHtml += `</div>`;
+                    } else { infoHtml += `<div class="unpaid-info" style="color:red;">회원 정보를 찾을 수 없습니다.</div>`; }
+                    notice.innerHTML = infoHtml;
+                }
+            }
+            let total = 0;
+            filtered.sort((a,b)=>a.reportMonth.localeCompare(b.reportMonth)).forEach(r => {
+                total += Number(r.amount); let noteText = (r.note && r.note !== 'undefined') ? r.note : '-';
+                body.innerHTML += `<tr><td>${r.reportMonth}</td><td>${r.name}</td><td>${r.date}</td><td>${r.target}</td><td>${r.method}</td><td>${Number(r.amount).toLocaleString()}</td><td>${noteText}</td></tr>`;
+            });
+            foot.innerHTML = `<tr class="summary-row"><td colspan="5">총 합계:</td><td colspan="2">${total.toLocaleString()}원</td></tr>`;
+        }
+    }
+    
+    function updatePrintTitle(type) {
+        if(type === 'input') {
+            const s = document.getElementById('viewTargetMonthStart').value;
+            const e = document.getElementById('viewTargetMonthEnd').value;
+            document.getElementById('inputPrintTitle').innerText = (s === e) ? `${s} 수입현황` : `${s} ~ ${e} 수입현황`;
+        } else if(type === 'expense') {
+            const s = document.getElementById('viewExMonthStart').value;
+            const e = document.getElementById('viewExMonthEnd').value;
+            document.getElementById('expensePrintTitle').innerText = (s === e) ? `${s} 지출현황` : `${s} ~ ${e} 지출현황`;
+        } else if(type === 'combined') {
+            const s = document.getElementById('viewCombinedMonthStart').value;
+            const e = document.getElementById('viewCombinedMonthEnd').value;
+            document.getElementById('combinedPrintTitle').innerText = (s === e) ? `${s} 수입 및 지출 종합현황` : `${s} ~ ${e} 수입 및 지출 종합현황`;
+        } else if(type === 'search') {
+            document.getElementById('searchPrintTitle').innerText = document.getElementById('searchMainTitle').innerText;
+        }
+    }
+
+    function exportToImage(areaId, type) {
+        if(type) updatePrintTitle(type);
+        const area = document.getElementById(areaId);
+        html2canvas(area, { ignoreElements: (el) => el.classList.contains('no-print') }).then(canvas => {
+            const link = document.createElement('a'); link.download = '데이터출력.png'; link.href = canvas.toDataURL(); link.click();
+        });
+    }
+
+    function exportToPDF(areaId, type) {
+        if(type) updatePrintTitle(type);
+        const originalTarget = document.querySelector('.print-target');
+        if(originalTarget) originalTarget.classList.remove('print-target');
+        document.getElementById(areaId).classList.add('print-target');
+        window.print();
+    }
+
+    function exportToExcel(tableId, fileName) {
+        const table = document.getElementById(tableId);
+        const rows = table.querySelectorAll("tr");
+        let excelTemplate = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+            <head><meta charset="UTF-8"><style>td, th { border: 0.5pt solid #000; text-align: center; mso-number-format: "\\#\\,\\#\\#0"; white-space: nowrap; padding: 5px; } .date-cell { mso-number-format: "yyyy-mm-dd"; } .header { background-color: #f8f9fa; font-weight: bold; } .summary { background-color: #fff9db; font-weight: bold; }</style></head>
+            <body><table>`;
+        rows.forEach((row) => {
+            if(row.classList.contains('no-print')) return;
+            excelTemplate += "<tr>";
+            const cols = row.querySelectorAll("th, td");
+            cols.forEach((col) => {
+                if(col.classList.contains('no-print')) return;
+                let style = "";
+                let val = col.innerText.replace(/원/g, '').trim();
+                if(val.match(/^\d{4}-\d{2}-\d{2}$/)) style = 'class="date-cell"';
+                if(row.tagName === "THEAD" || row.parentElement.tagName === "THEAD") style = 'class="header"';
+                if(row.classList.contains("summary-row")) style = 'class="summary"';
+                excelTemplate += `<td ${style}>${val}</td>`;
+            });
+            excelTemplate += "</tr>";
+        });
+        excelTemplate += "</table></body></html>";
+        const blob = new Blob([excelTemplate], { type: 'application/vnd.ms-excel' });
+        const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `${fileName}.xls`; link.click();
+    }
+
+    let popupZIndex = 3000;
+    
+    function viewReceipt(imgSrc) {
+        const popup = document.createElement('div');
+        popup.className = 'multi-popup';
+        popup.style.zIndex = ++popupZIndex;
+
+        const width = Math.min(350, window.innerWidth * 0.9);
+        const height = Math.min(400, window.innerHeight * 0.8);
+        let initialLeftPos = (window.innerWidth - width) / 2;
+        let initialTopPos = (window.innerHeight - height) / 2;
+        
+        popup.style.width = width + 'px';
+        popup.style.height = height + 'px';
+        popup.style.left = initialLeftPos + 'px';
+        popup.style.top = initialTopPos + 'px';
+
+        const header = document.createElement('div');
+        header.className = 'popup-header';
+        header.innerHTML = '<span style="font-weight:bold; font-size:14px;">🧾 증빙 자료</span><span class="close-popup" style="font-size:20px;">&times;</span>';
+        
+        const closeBtn = header.querySelector('.close-popup');
+        closeBtn.onclick = () => document.body.removeChild(popup);
+
+        const body = document.createElement('div');
+        body.className = 'popup-body';
+        const img = document.createElement('img');
+        img.src = imgSrc;
+        body.appendChild(img);
+
+        popup.appendChild(header);
+        popup.appendChild(body);
+
+        const dirs = ['t', 'b', 'l', 'r', 'tl', 'tr', 'bl', 'br'];
+        dirs.forEach(dir => {
+            const resizer = document.createElement('div');
+            resizer.className = `resizer resizer-${dir}`;
+            popup.appendChild(resizer);
+
+            let startX, startY, startW, startH, startL, startT;
+            
+            const doResize = (e) => {
+                let clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                let clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+                
+                let dx = clientX - startX;
+                let dy = clientY - startY;
+                
+                let newW = startW, newH = startH, newL = startL, newT = startT;
+                
+                if (dir.includes('r')) newW = startW + dx;
+                if (dir.includes('l')) { newW = startW - dx; newL = startL + dx; }
+                if (dir.includes('b')) newH = startH + dy;
+                if (dir.includes('t')) { newH = startH - dy; newT = startT + dy; }
+                
+                if (newW >= 200) { popup.style.width = newW + 'px'; popup.style.left = newL + 'px'; }
+                if (newH >= 200) { popup.style.height = newH + 'px'; popup.style.top = newT + 'px'; }
+            };
+
+            const stopResize = () => {
+                document.removeEventListener('mousemove', doResize);
+                document.removeEventListener('mouseup', stopResize);
+                document.removeEventListener('touchmove', doResize);
+                document.removeEventListener('touchend', stopResize);
+            };
+
+            const initResize = (e) => {
+                e.preventDefault();
+                e.stopPropagation(); 
+                let clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                let clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+                startX = clientX;
+                startY = clientY;
+                startW = popup.offsetWidth;
+                startH = popup.offsetHeight;
+                startL = popup.offsetLeft;
+                startT = popup.offsetTop;
+                
+                popup.style.zIndex = ++popupZIndex;
+
+                document.addEventListener('mousemove', doResize);
+                document.addEventListener('mouseup', stopResize);
+                document.addEventListener('touchmove', doResize, {passive: false});
+                document.addEventListener('touchend', stopResize);
+            };
+
+            resizer.addEventListener('mousedown', initResize);
+            resizer.addEventListener('touchstart', initResize, {passive: false});
+        });
+
+        document.body.appendChild(popup);
+
+        let isDragging = false;
+        let dragStartX, dragStartY, initialLeft, initialTop;
+
+        const onMouseMove = (e) => {
+            if (!isDragging) return;
+            let dx = e.clientX - dragStartX;
+            let dy = e.clientY - dragStartY;
+            let newLeft = initialLeft + dx;
+            let newTop = initialTop + dy;
+
+            const maxLeft = window.innerWidth - popup.offsetWidth;
+            const maxTop = window.innerHeight - popup.offsetHeight;
+            if (newLeft < 0) newLeft = 0;
+            if (newTop < 0) newTop = 0;
+            if (newLeft > maxLeft) newLeft = maxLeft;
+            if (newTop > maxTop) newTop = maxTop;
+
+            popup.style.left = newLeft + 'px';
+            popup.style.top = newTop + 'px';
+        };
+
+        const onMouseUp = () => {
+            isDragging = false;
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+
+        header.addEventListener('mousedown', (e) => {
+            if (e.target === closeBtn) return;
+            isDragging = true;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            initialLeft = popup.offsetLeft;
+            initialTop = popup.offsetTop;
+            popup.style.zIndex = ++popupZIndex; 
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+            e.preventDefault();
+        });
+
+        const onTouchMove = (e) => {
+            if (!isDragging) return;
+            const touch = e.touches[0];
+            let dx = touch.clientX - dragStartX;
+            let dy = touch.clientY - dragStartY;
+            let newLeft = initialLeft + dx;
+            let newTop = initialTop + dy;
+
+            const maxLeft = window.innerWidth - popup.offsetWidth;
+            const maxTop = window.innerHeight - popup.offsetHeight;
+            if (newLeft < 0) newLeft = 0;
+            if (newTop < 0) newTop = 0;
+            if (newLeft > maxLeft) newLeft = maxLeft;
+            if (newTop > maxTop) newTop = maxTop;
+
+            popup.style.left = newLeft + 'px';
+            popup.style.top = newTop + 'px';
+            e.preventDefault(); 
+        };
+
+        const onTouchEnd = () => {
+            isDragging = false;
+            document.removeEventListener('touchmove', onTouchMove);
+            document.removeEventListener('touchend', onTouchEnd);
+        };
+
+        header.addEventListener('touchstart', (e) => {
+            if (e.target === closeBtn) return;
+            isDragging = true;
+            const touch = e.touches[0];
+            dragStartX = touch.clientX;
+            dragStartY = touch.clientY;
+            initialLeft = popup.offsetLeft;
+            initialTop = popup.offsetTop;
+            popup.style.zIndex = ++popupZIndex;
+            document.addEventListener('touchmove', onTouchMove, {passive: false});
+            document.addEventListener('touchend', onTouchEnd);
+        }, {passive: true});
+    }
+
+    // 파일 렌더링 함수 (삭제 버튼 추가 UI)
+    function renderSelectedFiles() {
+        const container = document.getElementById('selectedFiles');
+        container.innerHTML = '';
+        currentReceipts.forEach((file, i) => {
+            container.innerHTML += `<span class="file-item">📎 ${file.name || '증빙'+(i+1)} <span class="file-del-btn" onclick="removeReceipt(${i})">&times;</span></span>`;
+        });
+    }
+
+    // 특정 파일 개별 삭제 기능
+    function removeReceipt(index) {
+        currentReceipts.splice(index, 1);
+        renderSelectedFiles();
+        document.getElementById('exReceipt').value = ""; // 동일한 파일 다시 선택 가능하도록 초기화
+    }
+
+    // 새로운 파일 추가 처리 (기존 파일 덮어쓰지 않고 배열에 추가)
+    function handleFileSelect(input) {
+        if(!input.files || input.files.length === 0) return;
+        
+        let filesToProcess = Array.from(input.files);
+        if (currentReceipts.length + filesToProcess.length > 10) {
+            alert("영수증은 최대 10개까지만 첨부 가능합니다.");
+            filesToProcess = filesToProcess.slice(0, 10 - currentReceipts.length);
+        }
+
+        filesToProcess.forEach((file) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // 원본을 그대로 넣지 않고 resizeImage를 통해 압축 후 배열에 추가
+                resizeImage(e.target.result, 800, 800, function(resizedDataUrl) {
+                    currentReceipts.push({ name: file.name, data: resizedDataUrl });
+                    renderSelectedFiles();
+                });
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        input.value = ""; // 파일 첨부 후 input 초기화 (연속 첨부 가능)
+    }
+
+    async function saveExpense() {
+        let date = document.getElementById('exDate').value;
+        let amount = document.getElementById('exAmount').value;
+        if(!date || !amount) { alert("지출일자와 금액을 입력해주세요."); return; }
+
+        let newEx = {
+            id: exEditIndex > -1 ? expenseRecords[exEditIndex].id : Date.now(),
+            date: date,
+            category: document.getElementById('exCategory').value,
+            amount: amount,
+            method: document.getElementById('exMethod').value,
+            reportMonth: document.getElementById('exReportMonth').value,
+            note: document.getElementById('exNote').value,
+            receipts: currentReceipts 
+        };
+
+        if(exEditIndex > -1) expenseRecords[exEditIndex] = newEx;
+        else expenseRecords.push(newEx);
+
+        await saveToFirebase(); 
+        renderExpenseTable(); 
+        resetExForm(); 
+        alert("지출 내역이 정상적으로 등록되었습니다.");
+    }
+
+    function resetExForm() {
+        exEditIndex = -1;
+        document.getElementById('exAmount').value = "";
+        document.getElementById('exNote').value = "";
+        document.getElementById('exReceipt').value = "";
+        currentReceipts = [];
+        renderSelectedFiles();
+        document.getElementById('expenseFormTitle').innerText = "💸 새 지출 내역 등록";
+        document.getElementById('exCancelBtn').style.display = "none";
+    }
+
+    // 수정 버튼 클릭 시 기존 파일 리스트를 배열로 확실히 불러옴
+    function startExEdit(idx) {
+        exEditIndex = idx;
+        let r = expenseRecords[idx];
+        document.getElementById('exDate').value = r.date;
+        document.getElementById('exCategory').value = r.category;
+        document.getElementById('exAmount').value = r.amount;
+        document.getElementById('exMethod').value = r.method;
+        document.getElementById('exReportMonth').value = r.reportMonth;
+        document.getElementById('exNote').value = r.note || "";
+        
+        // 기존 첨부파일 배열을 안전하게 깊은 복사하여 연동
+        currentReceipts = [];
+        if (r.receipts && r.receipts.length > 0) {
+            currentReceipts = JSON.parse(JSON.stringify(r.receipts)); 
+        } else if (r.receipt) {
+            currentReceipts = [{ name: '기존영수증.jpg', data: r.receipt }];
+        }
+        
+        renderSelectedFiles(); // 기존 파일을 [X] 버튼이 달린 UI로 즉시 출력
+        
+        document.getElementById('expenseFormTitle').innerText = "💸 지출 내역 수정";
+        document.getElementById('exCancelBtn').style.display = "inline-flex";
+        window.scrollTo(0, 0);
+    }
+
+    async function deleteExpense(idx) {
+        if(confirm('이 지출 내역을 정말 삭제하시겠습니까?')) {
+            expenseRecords.splice(idx, 1);
+            await saveToFirebase();
+            renderExpenseTable();
+        }
+    }
+</script>
+</body>
+</html>
