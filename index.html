@@ -617,7 +617,10 @@
         try {
             await saveToFirebase(); 
             document.getElementById('setupOverlay').style.display = 'none';
-            loginAsMember(membersList[idx], true);
+            alert(`🎉 ${membersList[idx].name} 위원님, 정보 설정이 완료되었습니다!\n\n방금 만드신 비밀번호 4자리로\n로그인 화면에서 직접 접속해 주세요.`);
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('isGuestPermanent');
+            location.reload();
         } catch (error) { alert("서버 저장 중 오류가 발생했습니다. 다시 시도해주세요."); }
     }
 
@@ -1602,13 +1605,20 @@
             receipts: currentReceipts 
         };
 
+        let targetIndex = exEditIndex > -1 ? exEditIndex : expenseRecords.length;
+
         if(exEditIndex > -1) expenseRecords[exEditIndex] = newEx;
         else expenseRecords.push(newEx);
 
-        await saveToFirebase(); 
-        renderExpenseTable(); 
-        resetExForm(); 
-        alert("지출 내역이 정상적으로 등록되었습니다.");
+        try {
+            // 전체를 덮어쓰지 않고 '방금 쓴 그 영수증 1건'만 안전하게 전송합니다.
+            await db.ref('jangbu/expenses/' + targetIndex).set(newEx);
+            renderExpenseTable(); 
+            resetExForm(); 
+            alert("지출 내역이 정상적으로 등록되었습니다.");
+        } catch (error) {
+            alert("통신 지연으로 저장에 실패했습니다. 다시 시도해주세요.");
+        }
     }
 
     function resetExForm() {
