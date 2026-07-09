@@ -736,7 +736,10 @@
                 }
             }
             
-            const dbMembers = data.members || [];
+// 파이어베이스 데이터가 Object 형식으로 변환되거나 null 구멍이 섞여 있을 때 발생하는 크래시를 완벽 차단합니다.
+            let dbMembersRaw = data.members || [];
+            let dbMembers = Array.isArray(dbMembersRaw) ? dbMembersRaw : Object.values(dbMembersRaw);
+            dbMembers = dbMembers.filter(dm => dm && dm.name);
             
             let mergedMembers = INITIAL_MEMBERS.map(m => {
                 const dbM = dbMembers.find(dm => dm.name === m.name);
