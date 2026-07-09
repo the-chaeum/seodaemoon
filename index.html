@@ -1043,7 +1043,7 @@ async function deleteMember(idx) {
         document.getElementById('endMonth').value = nextStr;
     }
     
-    async function saveRecord() { 
+async function saveRecord() { 
         let name = document.getElementById('memberName').value, amt = document.getElementById('payAmount').value, cat = document.getElementById('payCategory').value;
         if(!name || !amt) return;
 
@@ -1105,7 +1105,12 @@ async function deleteMember(idx) {
         let target = isDues ? `${document.getElementById('startMonth').value.substring(2)} ~ ${document.getElementById('endMonth').value.substring(2)}` : (document.getElementById('customCategory').value || cat);
         let newR = { id: editIndex>-1?records[editIndex].id:Date.now(), type: (isDues?'dues':'etc'), name, date: document.getElementById('payDate').value, target, months: (isDues ? document.getElementById('payMonths').value : ""), method: document.getElementById('payMethod').value, amount: amt, reportMonth: document.getElementById('reportMonth').value, note: document.getElementById('payNote').value };
         if(editIndex>-1) records[editIndex] = newR; else records.push(newR);
-        await saveToFirebase(); renderRecentTable(); resetForm(); alert("저장완료");
+        
+        // 무거운 전체 업로드 대신 '수입' 노드만 가볍게 업데이트합니다.
+        await db.ref('jangbu/records').set(records); 
+        renderRecentTable(); 
+        resetForm(); 
+        alert("저장완료");
     }
 
     function resetForm() { editIndex = -1; document.getElementById('formTitle').innerText = "💰 새 입금 등록"; document.getElementById('payAmount').value = ""; document.getElementById('cancelBtn').style.display = "none"; }
@@ -1136,7 +1141,14 @@ async function deleteMember(idx) {
         window.scrollTo(0, 0);
     }
     
-    async function deleteRecord(idx) { if(confirm('삭제하시겠습니까?')) { records.splice(idx,1); await saveToFirebase(); renderRecentTable(); } }
+async function deleteRecord(idx) { 
+        if(confirm('삭제하시겠습니까?')) { 
+            records.splice(idx,1); 
+            // 무거운 전체 업로드 대신 '수입' 노드만 가볍게 업데이트합니다.
+            await db.ref('jangbu/records').set(records); 
+            renderRecentTable(); 
+        } 
+    }
 
     function renderExpenseTable() {
         const s = document.getElementById('viewExMonthStart').value; 
