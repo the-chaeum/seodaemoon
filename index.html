@@ -1358,10 +1358,31 @@
 
     function exportToPDF(areaId, type) {
         if(type) updatePrintTitle(type);
-        const originalTarget = document.querySelector('.print-target');
-        if(originalTarget) originalTarget.classList.remove('print-target');
-        document.getElementById(areaId).classList.add('print-target');
-        window.print();
+        
+        // 1. 문서 전체에 잘못 꼬여있던 print-target 클래스 일괄 제거
+        document.querySelectorAll('.print-target').forEach(el => {
+            el.classList.remove('print-target');
+        });
+        
+        // 2. 사용자가 클릭한 타겟 영역에만 확실하게 인쇄 대상 지정
+        const targetArea = document.getElementById(areaId);
+        if(targetArea) targetArea.classList.add('print-target');
+        
+        // 3. 겹침 버그 해결: 하단의 '월간 요약 현황' 표가 인쇄 시 위로 올라와 타이틀을 가리는 현상 강제 차단
+        const statsArea = document.getElementById('statsPrintArea');
+        const originalDisplay = statsArea ? statsArea.style.display : 'none';
+        
+        if(statsArea && areaId !== 'statsPrintArea') {
+            statsArea.style.display = 'none'; // 인쇄하는 찰나의 순간에만 숨김 처리
+        }
+        
+        window.print(); // 인쇄 실행
+        
+        // 4. 인쇄 창이 닫히면 숨겨뒀던 요약 현황 표를 즉시 원상복구
+        if(statsArea && areaId !== 'statsPrintArea') {
+            statsArea.style.display = originalDisplay;
+        }
+    }
     }
 
     function exportToExcel(tableId, fileName) {
