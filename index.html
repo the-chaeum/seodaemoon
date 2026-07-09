@@ -1343,9 +1343,16 @@
 
     function exportToPDF(areaId, type) {
         if(type) updatePrintTitle(type);
-        const originalTarget = document.querySelector('.print-target');
-        if(originalTarget) originalTarget.classList.remove('print-target');
+        
+        // 기존 버그 수정: querySelector 대신 querySelectorAll을 사용하여 
+        // 겹쳐있는 모든 print-target 클래스를 확실하게 초기화합니다.
+        document.querySelectorAll('.print-target').forEach(el => {
+            el.classList.remove('print-target');
+        });
+        
+        // 현재 출력하려는 대상에만 정확히 클래스를 부여합니다.
         document.getElementById(areaId).classList.add('print-target');
+        
         window.print();
     }
 
