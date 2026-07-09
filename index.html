@@ -1400,12 +1400,55 @@
         window.print();
     }
 
-    function exportToExcel(tableId, fileName) {
+function exportToExcel(tableId, fileName) {
+        // 엑셀 출력 시에도 현재 날짜 조건에 맞는 동적 타이틀을 먼저 매칭합니다.
+        let type = '';
+        if(tableId === 'recentTable') type = 'input';
+        else if(tableId === 'expenseTable') type = 'expense';
+        else if(tableId === 'combinedTable') type = 'combined';
+        else if(tableId === 'resultTable') type = 'search';
+        
+        if(type) updatePrintTitle(type);
+
         const table = document.getElementById(tableId);
+        if(!table) return;
+
+        // 적절한 타이틀 텍스트 추출
+        let titleText = fileName;
+        const parentArea = table.closest('.section-box');
+        if (parentArea) {
+            const dynamicTitle = parentArea.querySelector('.dynamic-title');
+            if (dynamicTitle && dynamicTitle.innerText.trim()) {
+                titleText = dynamicTitle.innerText.trim().replace(/\n/g, ' ');
+            }
+        }
+        if (tableId === 'memberTable') {
+            titleText = "📋 전체 회원 관리 목록";
+        }
+
         const rows = table.querySelectorAll("tr");
+        
+        // 타이틀이 표 전체 너비만큼 병합되도록 최대 열(Column) 개수 계산
+        let maxCols = 0;
+        rows.forEach((row) => {
+            if(row.classList.contains('no-print')) return;
+            const cols = row.querySelectorAll("th, td");
+            let validCols = 0;
+            cols.forEach(col => {
+                if(!col.classList.contains('no-print')) validCols++;
+            });
+            if(validCols > maxCols) maxCols = validCols;
+        });
+
         let excelTemplate = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-            <head><meta charset="UTF-8"><style>td, th { border: 0.5pt solid #000; text-align: center; mso-number-format: "\\#\\,\\#\\#0"; white-space: nowrap; padding: 5px; } .date-cell { mso-number-format: "yyyy-mm-dd"; } .header { background-color: #f8f9fa; font-weight: bold; } .summary { background-color: #fff9db; font-weight: bold; }</style></head>
+            <head><meta charset="UTF-8"><style>td, th { border: 0.5pt solid #000; text-align: center; mso-number-format: "\\#\\,\\#\\#0"; white-space: nowrap; padding: 5px; } .excel-title { font-size: 16px; font-weight: bold; height: 35px; text-align: center; border: none; } .date-cell { mso-number-format: "yyyy-mm-dd"; } .header { background-color: #f8f9fa; font-weight: bold; } .summary { background-color: #fff9db; font-weight: bold; }</style></head>
             <body><table>`;
+            
+        // 1. 엑셀 파일 최상단에 제목 행 추가 (열 병합 처리)
+        excelTemplate += `<tr><td colspan="${maxCols || 5}" class="excel-title">${titleText}</td></tr>`;
+        excelTemplate += `<tr><td colspan="${maxCols || 5}" style="border:none; height:10px;"></td></tr>`; // 한 줄 띄우기 공백
+
+        // 2. 기존 테이블 데이터 추가
         rows.forEach((row) => {
             if(row.classList.contains('no-print')) return;
             excelTemplate += "<tr>";
@@ -1422,8 +1465,12 @@
             excelTemplate += "</tr>";
         });
         excelTemplate += "</table></body></html>";
+        
         const blob = new Blob([excelTemplate], { type: 'application/vnd.ms-excel' });
-        const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `${fileName}.xls`; link.click();
+        const link = document.createElement("a"); 
+        link.href = URL.createObjectURL(blob); 
+        link.download = `${fileName}.xls`; 
+        link.click();
     }
 
     let popupZIndex = 3000;
