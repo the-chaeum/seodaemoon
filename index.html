@@ -1336,59 +1336,59 @@
         }
     }
 
-function exportToImage(areaId, type) {
-        alert("1단계: 버튼 클릭 인식 OK!");
-        
-        const executeCapture = () => {
-            alert("3단계: 이미지 캡처 준비 (화면 요소를 읽기 시작합니다)");
-            if(type) updatePrintTitle(type);
-            const area = document.getElementById(areaId);
-            if(!area) {
-                alert("에러: 캡처할 화면 영역을 찾지 못했습니다.");
-                return;
-            }
-
-            const dynamicTitle = area.querySelector('.dynamic-title');
-            if(dynamicTitle) dynamicTitle.style.display = 'block';
-
-            alert("4단계: html2canvas 변환 시작 (여기서 멈춘다면 보안 정책 또는 용량 초과 문제!)");
-            
-            html2canvas(area, {
-                useCORS: true,
-                backgroundColor: '#ffffff',
-                scale: 1, // 원인 파악을 위해 임시로 해상도를 낮춤
-                ignoreElements: (el) => el.classList && el.classList.contains('no-print')
-            }).then(canvas => {
-                alert("5단계: 변환 완료! 파일 다운로드를 시도합니다.");
-                let fileName = type === 'input' ? '수입현황' : (type === 'expense' ? '지출현황' : (type === 'combined' ? '종합현황' : '조회결과'));
-                const link = document.createElement('a');
-                link.download = fileName + '_이미지출력.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                
-                if(dynamicTitle) dynamicTitle.style.display = 'none';
-            }).catch(err => {
-                alert("캡처 중 에러 발생: " + err.message);
-                if(dynamicTitle) dynamicTitle.style.display = 'none';
-            });
-        };
-
-        if (typeof html2canvas === 'undefined') {
-            alert("2단계: 라이브러리가 없어서 인터넷에서 불러옵니다.");
-            const script = document.createElement('script');
+// 1. 도구가 완전히 로드될 때까지 브라우저의 에러를 원천 차단하는 함수
+    function exportToImage(areaId, type) {
+        if (typeof window['html2canvas'] === 'undefined') {
+            // 라이브러리가 아직 없다면 인터넷에서 즉시 불러옵니다.
+            let script = document.createElement('script');
             script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-            script.onload = () => {
-                alert("2-1단계: 라이브러리 불러오기 성공!");
-                executeCapture();
-            };
-            script.onerror = () => {
-                alert("에러: 깃허브 환경에서 외부 라이브러리 접속이 차단되었습니다.");
-            };
             document.head.appendChild(script);
+            
+            // 다운로드가 완료되면 그제야 캡처 함수를 실행합니다.
+            script.onload = function() {
+                executeActualCapture(areaId, type);
+            };
+            script.onerror = function() {
+                alert("이미지 변환 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해주세요.");
+            };
         } else {
-            alert("2단계: 이미 로드된 라이브러리를 사용합니다.");
-            executeCapture();
+            // 이미 존재한다면 즉시 캡처를 실행합니다.
+            executeActualCapture(areaId, type);
         }
+    }
+
+    // 2. 에러 없이 안전하게 실제 화면을 캡처하는 핵심 함수
+    function executeActualCapture(areaId, type) {
+        if(type) updatePrintTitle(type);
+        const area = document.getElementById(areaId);
+        if(!area) return;
+
+        // 캡처 직전 상단 제목 강제 노출
+        const dynamicTitle = area.querySelector('.dynamic-title');
+        if(dynamicTitle) dynamicTitle.style.display = 'block';
+
+        // window['html2canvas'] 방식을 사용하여 정의되지 않았다는 에러를 100% 예방합니다.
+        window['html2canvas'](area, {
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            scale: 2, // 고화질 설정
+            ignoreElements: function(el) {
+                return el && el.classList && el.classList.contains('no-print');
+            }
+        }).then(function(canvas) {
+            let fileName = type === 'input' ? '수입현황' : (type === 'expense' ? '지출현황' : (type === 'combined' ? '종합현황' : '조회결과'));
+            
+            const link = document.createElement('a');
+            link.download = fileName + '_이미지출력.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            
+            // 캡처 완료 후 제목 다시 숨김
+            if(dynamicTitle) dynamicTitle.style.display = 'none';
+        }).catch(function(err) {
+            alert("이미지 생성 중 오류가 발생했습니다: " + err.message);
+            if(dynamicTitle) dynamicTitle.style.display = 'none';
+        });
     }
 
     function exportToPDF(areaId, type) {
