@@ -1163,7 +1163,7 @@
         tfoot.innerHTML = `<tr class="summary-row" style="background:#fff5f5;"><td colspan="2" style="text-align:right">수입: +${inAmt.toLocaleString()} / 지출: -${totalExpense.toLocaleString()}</td><td colspan="5" style="color:#0056b3;">현재 잔액: ${(totalIncome + inAmt - totalExpense).toLocaleString()}원</td></tr>`; 
     }
     
-    function renderCombinedTable() {
+function renderCombinedTable() {
         const s = document.getElementById('viewCombinedMonthStart').value;
         const e = document.getElementById('viewCombinedMonthEnd').value;
         const tbody = document.getElementById('combinedBody'), tfoot = document.getElementById('combinedFoot');
@@ -1179,7 +1179,8 @@
             if(isIn) { balance += amt; tIn += amt; } else { balance -= amt; tOut += amt; }
             tbody.innerHTML += `<tr class="${isIn?'income-row':'expense-row'}"><td>${item.date}</td><td><span style="color:${isIn?'green':'red'};">${item.cType}</span></td><td>${isIn?item.name:item.category}</td><td style="text-align:left;">${isIn?item.target:(item.note||'-')}</td><td>${isIn?amt.toLocaleString():'-'}</td><td>${!isIn?amt.toLocaleString():'-'}</td><td style="font-weight:bold;">${balance.toLocaleString()}</td></tr>`;
         });
-        tfoot.innerHTML = `<tr class="summary-row"><td colspan="4">기간 요약</td><td style="color:green;">+${tIn.toLocaleString()}</td><td style="color:red;">-${tOut.toLocaleString()}</td><td>${balance.toLocaleString()}</td></tr>`;
+        // 텍스트 안내 부분에 수입 총액과 지출 총액 수치를 함께 명시해 줍니다.
+        tfoot.innerHTML = `<tr class="summary-row"><td colspan="4">기간 요약 (수입 총액: ${tIn.toLocaleString()}원 / 지출 총액: ${tOut.toLocaleString()}원)</td><td style="color:green;">+${tIn.toLocaleString()}</td><td style="color:red;">-${tOut.toLocaleString()}</td><td>${balance.toLocaleString()}</td></tr>`;
     }
 
     function calculateRangeStats() { 
