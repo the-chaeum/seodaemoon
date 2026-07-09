@@ -1339,8 +1339,27 @@
     function exportToImage(areaId, type) {
         if(type) updatePrintTitle(type);
         const area = document.getElementById(areaId);
-        html2canvas(area, { ignoreElements: (el) => el.classList.contains('no-print') }).then(canvas => {
-            const link = document.createElement('a'); link.download = '데이터출력.png'; link.href = canvas.toDataURL(); link.click();
+        
+        // 이미지 저장 시에만 화면에 제목이 나타나도록 강제 처리
+        const dynamicTitle = area.querySelector('.dynamic-title');
+        if(dynamicTitle) dynamicTitle.style.display = 'block';
+
+        html2canvas(area, { 
+            // 텍스트 노드에서 발생하는 에러 방지 (el.classList && 추가)
+            ignoreElements: (el) => el.classList && el.classList.contains('no-print'),
+            backgroundColor: '#ffffff', // 배경을 흰색으로 고정하여 투명해지는 현상 방지
+            scale: 2 // 이미지 화질을 조금 더 선명하게 올림
+        }).then(canvas => {
+            const link = document.createElement('a'); 
+            link.download = type + '_데이터출력.png'; // 파일명에 탭 이름 추가
+            link.href = canvas.toDataURL(); 
+            link.click();
+            
+            // 저장이 끝나면 제목을 다시 원래대로 숨김 처리
+            if(dynamicTitle) dynamicTitle.style.display = 'none';
+        }).catch(err => {
+            console.error("이미지 변환 에러:", err);
+            alert("이미지를 생성하는 도중 문제가 발생했습니다.");
         });
     }
 
