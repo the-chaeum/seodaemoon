@@ -1316,18 +1316,24 @@
     }
     
     function updatePrintTitle(type) {
+        const formatYM = (ym) => {
+            if(!ym) return "";
+            const p = ym.split('-');
+            return `${p[0].substring(2)}년 ${Number(p[1])}월`;
+        };
+
         if(type === 'input') {
             const s = document.getElementById('viewTargetMonthStart').value;
             const e = document.getElementById('viewTargetMonthEnd').value;
-            document.getElementById('inputPrintTitle').innerText = (s === e) ? `${s} 수입현황` : `${s} ~ ${e} 수입현황`;
+            document.getElementById('inputPrintTitle').innerText = (s === e) ? `${formatYM(s)} 수입현황` : `${formatYM(s)} ~ ${formatYM(e)} 수입현황`;
         } else if(type === 'expense') {
             const s = document.getElementById('viewExMonthStart').value;
             const e = document.getElementById('viewExMonthEnd').value;
-            document.getElementById('expensePrintTitle').innerText = (s === e) ? `${s} 지출현황` : `${s} ~ ${e} 지출현황`;
+            document.getElementById('expensePrintTitle').innerText = (s === e) ? `${formatYM(s)} 지출현황` : `${formatYM(s)} ~ ${formatYM(e)} 지출현황`;
         } else if(type === 'combined') {
             const s = document.getElementById('viewCombinedMonthStart').value;
             const e = document.getElementById('viewCombinedMonthEnd').value;
-            document.getElementById('combinedPrintTitle').innerText = (s === e) ? `${s} 수입 및 지출 종합현황` : `${s} ~ ${e} 수입 및 지출 종합현황`;
+            document.getElementById('combinedPrintTitle').innerText = (s === e) ? `${formatYM(s)} 수입 및 지출 종합현황` : `${formatYM(s)} ~ ${formatYM(e)} 수입 및 지출 종합현황`;
         } else if(type === 'search') {
             document.getElementById('searchPrintTitle').innerText = document.getElementById('searchMainTitle').innerText;
         }
@@ -1336,8 +1342,17 @@
     function exportToImage(areaId, type) {
         if(type) updatePrintTitle(type);
         const area = document.getElementById(areaId);
+        
+        const titleEl = area.querySelector('.dynamic-title');
+        if(titleEl) titleEl.style.display = 'block';
+
         html2canvas(area, { ignoreElements: (el) => el.classList.contains('no-print') }).then(canvas => {
-            const link = document.createElement('a'); link.download = '데이터출력.png'; link.href = canvas.toDataURL(); link.click();
+            const link = document.createElement('a'); 
+            link.download = '데이터출력.png'; 
+            link.href = canvas.toDataURL(); 
+            link.click();
+            
+            if(titleEl) titleEl.style.display = ''; 
         });
     }
 
