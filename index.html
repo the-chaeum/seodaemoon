@@ -1336,53 +1336,58 @@
         }
     }
 
-async function exportToImage(areaId, type) {
-        try {
-            // 라이브러리 로드 실패 여부 확인
-            if (typeof html2canvas === 'undefined') {
-                alert("이미지 변환 기능이 로드되지 않았습니다. 인터넷 연결을 확인하고 새로고침 후 다시 시도해주세요.");
-                return;
-            }
-            
+function exportToImage(areaId, type) {
+        alert("1단계: 버튼 클릭 인식 OK!");
+        
+        const executeCapture = () => {
+            alert("3단계: 이미지 캡처 준비 (화면 요소를 읽기 시작합니다)");
             if(type) updatePrintTitle(type);
             const area = document.getElementById(areaId);
-            if(!area) return;
+            if(!area) {
+                alert("에러: 캡처할 화면 영역을 찾지 못했습니다.");
+                return;
+            }
 
-            // 캡쳐 전에 제목 강제 노출
             const dynamicTitle = area.querySelector('.dynamic-title');
-            if(dynamicTitle) {
-                dynamicTitle.style.display = 'block';
-            }
+            if(dynamicTitle) dynamicTitle.style.display = 'block';
 
-            // 가장 안정적인 옵션들로 캡쳐 진행 (CORS 허용, 예외처리 강화)
-            const canvas = await html2canvas(area, { 
-                useCORS: true, 
-                allowTaint: true,
+            alert("4단계: html2canvas 변환 시작 (여기서 멈춘다면 보안 정책 또는 용량 초과 문제!)");
+            
+            html2canvas(area, {
+                useCORS: true,
                 backgroundColor: '#ffffff',
-                scale: 2,
-                ignoreElements: function(el) {
-                    if(el && el.classList) {
-                        return el.classList.contains('no-print');
-                    }
-                    return false;
-                }
+                scale: 1, // 원인 파악을 위해 임시로 해상도를 낮춤
+                ignoreElements: (el) => el.classList && el.classList.contains('no-print')
+            }).then(canvas => {
+                alert("5단계: 변환 완료! 파일 다운로드를 시도합니다.");
+                let fileName = type === 'input' ? '수입현황' : (type === 'expense' ? '지출현황' : (type === 'combined' ? '종합현황' : '조회결과'));
+                const link = document.createElement('a');
+                link.download = fileName + '_이미지출력.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                if(dynamicTitle) dynamicTitle.style.display = 'none';
+            }).catch(err => {
+                alert("캡처 중 에러 발생: " + err.message);
+                if(dynamicTitle) dynamicTitle.style.display = 'none';
             });
+        };
 
-            // 파일명 한글 지정
-            let fileName = type === 'input' ? '수입현황' : (type === 'expense' ? '지출현황' : (type === 'combined' ? '종합현황' : '조회결과'));
-            
-            const link = document.createElement('a'); 
-            link.download = fileName + '_이미지출력.png'; 
-            link.href = canvas.toDataURL('image/png'); 
-            link.click();
-            
-            // 캡쳐 후 원상복구
-            if(dynamicTitle) {
-                dynamicTitle.style.display = 'none';
-            }
-        } catch(error) {
-            console.error("이미지 저장 에러 로그:", error);
-            alert("이미지 생성 중 오류가 발생했습니다: " + error.message);
+        if (typeof html2canvas === 'undefined') {
+            alert("2단계: 라이브러리가 없어서 인터넷에서 불러옵니다.");
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            script.onload = () => {
+                alert("2-1단계: 라이브러리 불러오기 성공!");
+                executeCapture();
+            };
+            script.onerror = () => {
+                alert("에러: 깃허브 환경에서 외부 라이브러리 접속이 차단되었습니다.");
+            };
+            document.head.appendChild(script);
+        } else {
+            alert("2단계: 이미 로드된 라이브러리를 사용합니다.");
+            executeCapture();
         }
     }
 
