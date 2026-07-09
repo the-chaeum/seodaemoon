@@ -840,7 +840,7 @@
         });
     }
 
-    async function saveMember() {
+async function saveMember() {
         let name = document.getElementById('newMemName').value.trim();
         let tel = document.getElementById('newMemTel').value.trim();
         let dues = document.getElementById('newMemDues').value;
@@ -865,7 +865,8 @@
             membersList.push(newMem);
         }
         
-        await saveToFirebase();
+        // 무거운 전체 업로드 대신 '회원' 노드만 가볍고 즉각적으로 업데이트합니다.
+        await db.ref('jangbu/members').set(membersList);
         renderMemberTable();
         renderMemberSelects();
         resetMemberForm();
@@ -896,10 +897,11 @@
         document.getElementById('memCancelBtn').style.display = "none";
     }
 
-    async function deleteMember(idx) {
+async function deleteMember(idx) {
         if(confirm(`'${membersList[idx].name}' 회원을 정말 삭제하시겠습니까?`)) {
             membersList.splice(idx, 1);
-            await saveToFirebase();
+            // 무거운 전체 업로드 대신 '회원' 노드만 가볍게 업데이트합니다.
+            await db.ref('jangbu/members').set(membersList);
             renderMemberTable();
             renderMemberSelects();
         }
